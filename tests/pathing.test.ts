@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildHouse, type HouseDef } from '../src/sim/house';
 import { findPath, pathCost } from '../src/sim/pathing';
 import { createSim, step } from '../src/sim/sim';
-import { house, houseDef } from './helpers';
+import { house, houseDef, world } from './helpers';
 
 function isConnectedPath(path: string[]): boolean {
   return path.every((id, i) => i === 0 || house.adjacency.get(path[i - 1]!)!.some((n) => n.id === id));
@@ -123,10 +123,10 @@ describe('figure walking', () => {
 
   it('reaches every node when sent there from a standstill', () => {
     for (const target of house.nodeIds) {
-      const sim = createSim(house, 42);
-      step(sim, house, [{ type: 'goTo', node: target }]);
+      const sim = createSim(world, 42);
+      step(sim, world, [{ type: 'goTo', node: target }]);
       let t = 0;
-      while (sim.person.path.length > 0 && t++ < MAX_TICKS) step(sim, house);
+      while (sim.person.path.length > 0 && t++ < MAX_TICKS) step(sim, world);
       expect(sim.person.at, target).toBe(target);
       const node = house.nodes.get(target)!;
       expect([sim.person.x, sim.person.y]).toEqual([node.x, node.y]);
@@ -135,20 +135,20 @@ describe('figure walking', () => {
 
   it('reaches every node when redirected mid-walk', () => {
     for (const target of house.nodeIds) {
-      const sim = createSim(house, 7);
-      step(sim, house, [{ type: 'goTo', node: 'kitchen.bowl' }]);
-      for (let i = 0; i < 37; i++) step(sim, house); // part-way along an edge
-      step(sim, house, [{ type: 'goTo', node: target }]);
+      const sim = createSim(world, 7);
+      step(sim, world, [{ type: 'goTo', node: 'kitchen.bowl' }]);
+      for (let i = 0; i < 37; i++) step(sim, world); // part-way along an edge
+      step(sim, world, [{ type: 'goTo', node: target }]);
       let t = 0;
-      while (sim.person.path.length > 0 && t++ < MAX_TICKS) step(sim, house);
+      while (sim.person.path.length > 0 && t++ < MAX_TICKS) step(sim, world);
       expect(sim.person.at, target).toBe(target);
     }
   });
 
   it('only ever stands on walkable lines while wandering', () => {
-    const sim = createSim(house, 99);
+    const sim = createSim(world, 99);
     for (let i = 0; i < 20000; i++) {
-      step(sim, house);
+      step(sim, world);
       const p = sim.person;
       const a = house.nodes.get(p.at)!;
       const next = p.path[0] ? house.nodes.get(p.path[0])! : a;

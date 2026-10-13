@@ -1,4 +1,5 @@
 // Placeholder-art renderer. Reads sim state; never writes to it.
+import type { Pose } from '../sim/activities';
 import type { House } from '../sim/house';
 
 export interface FigurePose {
@@ -6,13 +7,23 @@ export interface FigurePose {
   y: number;
   facing: -1 | 1;
   walking: boolean;
+  pose: Pose;
+  asleep: boolean;
   tick: number;
 }
 
 const WALL = '#4a3b2f';
 const ROOF = '#7a3f2c';
 
-export function drawHouse(ctx: CanvasRenderingContext2D, house: House, showGraph: boolean): void {
+/** Placeholder sky: night, dawn/dusk and day by the hour, fractional for smooth changes. */
+function skyColour(hour: number): string {
+  if (hour < 5 || hour >= 21) return '#1c2340';
+  if (hour < 7) return '#d79b7d';
+  if (hour >= 19) return '#6b5a88';
+  return '#9cc4dd';
+}
+
+export function drawHouse(ctx: CanvasRenderingContext2D, house: House, hour: number, showGraph: boolean): void {
   const { width, height } = house.def.size;
   const floors = house.def.floors;
   const top = Math.min(...floors.map((f) => f.ceilingY));
@@ -20,7 +31,7 @@ export function drawHouse(ctx: CanvasRenderingContext2D, house: House, showGraph
   const left = Math.min(...house.def.rooms.map((r) => r.x0));
   const right = Math.max(...house.def.rooms.map((r) => r.x1));
 
-  ctx.fillStyle = '#9cc4dd';
+  ctx.fillStyle = skyColour(hour);
   ctx.fillRect(0, 0, width, height);
   ctx.fillStyle = '#5d8a4a';
   ctx.fillRect(0, bottom, width, height - bottom);
@@ -102,21 +113,59 @@ function drawGraph(ctx: CanvasRenderingContext2D, house: House): void {
   for (const node of house.nodes.values()) ctx.fillRect(node.x - 1, node.y - 2, 3, 3);
 }
 
-/** A 7x18 placeholder figure standing with feet at (x, y). */
+/** A 7x18 placeholder figure with feet at (x, y). Sits or lies down for activities that ask for it. */
 export function drawFigure(ctx: CanvasRenderingContext2D, pose: FigurePose): void {
   const x = Math.round(pose.x);
   const y = Math.round(pose.y);
+
+  if (pose.pose === 'lie') {
+    // On the bed or in the bath: lying flat, head towards the wall.
+    const top = y - 10;
+    ctx.fillStyle = '#2b2b5c';
+    ctx.fillRect(x, top, 7, 3);
+    ctx.fillStyle = '#c0392b';
+    ctx.fillRect(x - 6, top, 7, 4);
+    ctx.fillStyle = '#f0c8a0';
+    ctx.fillRect(x - 11, top - 1, 5, 5);
+    if (pose.asleep) {
+      ctx.fillStyle = '#fff';
+      ctx.font = '6px monospace';
+      const bob = Math.floor(pose.tick / 20) % 3;
+      ctx.fillText('z', x - 12 + bob * 2, top - 8 - bob * 2);
+    }
+    return;
+  }
+
+  const sitting = pose.pose === 'sit';
+  const lift = sitting ? 3 : 0;
   const stride = pose.walking ? Math.floor(pose.tick / 4) % 2 : 0;
 
   ctx.fillStyle = '#2b2b5c'; // trousers
-  ctx.fillRect(x - 3 + stride, y - 6, 2, 6);
-  ctx.fillRect(x + 1 - stride, y - 6, 2, 6);
+  if (sitting) {
+    ctx.fillRect(x - 3, y - 6, 7, 2);
+    ctx.fillRect(pose.facing === 1 ? x + 2 : x - 3, y - 4, 2, 4);
+  } else {
+    ctx.fillRect(x - 3 + stride, y - 6, 2, 6);
+    ctx.fillRect(x + 1 - stride, y - 6, 2, 6);
+  }
   ctx.fillStyle = '#c0392b'; // shirt
-  ctx.fillRect(x - 3, y - 13, 7, 7);
+  ctx.fillRect(x - 3, y - 13 + lift, 7, 7);
   ctx.fillStyle = '#f0c8a0'; // head
-  ctx.fillRect(x - 2, y - 18, 5, 5);
+  ctx.fillRect(x - 2, y - 18 + lift, 5, 5);
   ctx.fillStyle = '#3b2a1a'; // hair
-  ctx.fillRect(x - 2, y - 18, 5, 1);
+  ctx.fillRect(x - 2, y - 18 + lift, 5, 1);
   ctx.fillStyle = '#000'; // eye shows which way he faces
-  ctx.fillRect(pose.facing === 1 ? x + 1 : x - 1, y - 16, 1, 1);
+  ctx.fillRect(pose.facing === 1 ? x + 1 : x - 1, y - 16 + lift, 1, 1);
+}
+
+/** Placeholder dog, lying by its bowl. Wags when fed. */
+export function drawDog(ctx: CanvasRenderingContext2D, x: number, y: number, wellFed: boolean, tick: number): void {
+  ctx.fillStyle = '#a0703c';
+  ctx.fillRect(x, y - 4, 9, 4); // body
+  ctx.fillRect(x - 3, y - 7, 4, 4); // head
+  ctx.fillStyle = '#6b4523';
+  ctx.fillRect(x - 3, y - 7, 1, 2); // ear
+  const wag = wellFed && Math.floor(tick / 6) % 2 === 0 ? -1 : 0;
+  ctx.fillStyle = '#a0703c';
+  ctx.fillRect(x + 9, y - 5 + wag, 2, 1); // tail
 }

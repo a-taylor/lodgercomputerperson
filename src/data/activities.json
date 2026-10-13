@@ -1,0 +1,106 @@
+{
+  "activities": [
+    {
+      "id": "eat",
+      "label": "cooking and eating",
+      "adverts": { "food": 50 },
+      "hours": [[7, 9, 2.5], [12, 14, 2.5], [18, 20, 2.5], [6, 7, 1.5], [11, 12, 1.5], [17, 18, 1.5], [22, 6, 0.3]],
+      "steps": [
+        { "node": "kitchen.fridge", "minutes": [1, 3], "label": "getting food out of the fridge" },
+        { "node": "kitchen.stove", "minutes": [8, 15], "label": "cooking" },
+        { "node": "kitchen.table", "minutes": [12, 20], "label": "eating", "pose": "sit", "rates": { "food": 180 } }
+      ]
+    },
+    {
+      "id": "drink",
+      "label": "having a drink",
+      "adverts": { "water": 40 },
+      "steps": [
+        { "node": "kitchen.fridge", "minutes": [2, 3], "label": "drinking a glass of water", "rates": { "water": 900 } }
+      ]
+    },
+    {
+      "id": "sleep",
+      "label": "going to bed",
+      "adverts": { "energy": 80 },
+      "hours": [[22, 6, 3], [21, 22, 0.4], [20, 21, 0.15], [6, 20, 0.12]],
+      "steps": [
+        { "node": "bathroom.sink", "minutes": [2, 4], "label": "brushing his teeth", "rates": { "hygiene": 60 } },
+        {
+          "node": "bedroom.bed",
+          "minutes": [660, 660],
+          "label": "asleep",
+          "pose": "lie",
+          "asleep": true,
+          "rates": { "energy": 7.5 },
+          "until": { "key": "energy", "atLeast": 99, "fromHour": 5, "toHour": 21 }
+        }
+      ]
+    },
+    {
+      "id": "wash",
+      "label": "getting washed",
+      "adverts": { "hygiene": 60 },
+      "hours": [[6, 10, 1.8], [22, 6, 0.2]],
+      "steps": [
+        { "node": "bathroom.sink", "minutes": [3, 5], "label": "washing his face", "rates": { "hygiene": 120 } },
+        { "node": "bathroom.bath", "minutes": [12, 20], "label": "having a bath", "pose": "lie", "rates": { "hygiene": 220 } }
+      ]
+    },
+    {
+      "id": "tv",
+      "label": "watching TV",
+      "kind": "leisure",
+      "base": 0.05,
+      "cooldownMinutes": 240,
+      "adverts": { "fun": 50 },
+      "hours": [[0, 7, 0.1]],
+      "steps": [
+        { "node": "den.tv", "minutes": [30, 90], "label": "watching TV", "pose": "sit", "rates": { "fun": 50, "energy": -2 } }
+      ]
+    },
+    {
+      "id": "read",
+      "label": "reading",
+      "kind": "leisure",
+      "base": 0.05,
+      "cooldownMinutes": 240,
+      "adverts": { "fun": 45 },
+      "hours": [[0, 7, 0.1]],
+      "steps": [
+        { "node": "office.bookshelf", "minutes": [1, 2], "label": "choosing a book" },
+        { "node": "living.armchair", "minutes": [30, 75], "label": "reading", "pose": "sit", "rates": { "fun": 40 } }
+      ]
+    },
+    {
+      "id": "piano",
+      "label": "playing the piano",
+      "kind": "leisure",
+      "base": 0.05,
+      "cooldownMinutes": 240,
+      "adverts": { "fun": 45 },
+      "hours": [[22, 8, 0.05]],
+      "steps": [
+        { "node": "den.piano", "minutes": [15, 45], "label": "playing the piano", "pose": "sit", "rates": { "fun": 70 } }
+      ]
+    },
+    {
+      "id": "feedDog",
+      "label": "feeding the dog",
+      "adverts": { "dog": 60 },
+      "hours": [[6, 10, 1.5], [17, 20, 1.5]],
+      "steps": [
+        { "node": "kitchen.fridge", "minutes": [1, 2], "label": "getting the dog food" },
+        { "node": "kitchen.bowl", "minutes": [1, 2], "label": "feeding the dog", "rates": { "dog": 2400 } }
+      ]
+    },
+    {
+      "id": "potter",
+      "label": "pottering about",
+      "kind": "idle",
+      "base": 0.06,
+      "adverts": {},
+      "steps": [{ "node": "*", "minutes": [3, 12], "label": "pottering about" }]
+    }
+  ]
+}

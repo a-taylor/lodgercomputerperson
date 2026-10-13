@@ -10,7 +10,8 @@
     <main>
       <canvas id="house" width="320" height="240" aria-label="Cutaway view of the house"></canvas>
       <p id="status" role="status" aria-live="polite"></p>
-      <p class="hint">Click a spot to send him there. <kbd>G</kbd> toggles the floor graph. Add <code>?seed=123</code> to the URL to change the seed.</p>
+      <pre id="debug" hidden></pre>
+      <p class="hint">Click a spot to send him there. <kbd>D</kbd> shows his needs, <kbd>G</kbd> the floor graph. URL options: <code>?seed=123</code>, <code>?speed=60</code>.</p>
     </main>
     <script type="module" src="/src/main.ts"></script>
   </body>

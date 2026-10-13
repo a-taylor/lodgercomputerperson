@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { createRng, nextFloat } from '../src/sim/rng';
 import { createSim, hashState, run, step, type SimState } from '../src/sim/sim';
-import { house } from './helpers';
+import { world } from './helpers';
 
 const TICKS = 20 * 60 * 30; // half an hour of sim time at 20 Hz
 
 function trace(seed: number, ticks: number): string[] {
-  const sim = createSim(house, seed);
+  const sim = createSim(world, seed);
   const out: string[] = [];
   for (let i = 0; i < ticks; i++) {
-    step(sim, house);
+    step(sim, world);
     if (i % 500 === 0) out.push(hashState(sim));
   }
   return out;
@@ -38,37 +38,37 @@ describe('seeded simulation', () => {
   });
 
   it('differs between seeds', () => {
-    const a = createSim(house, 1);
-    const b = createSim(house, 2);
-    run(a, house, TICKS);
-    run(b, house, TICKS);
+    const a = createSim(world, 1);
+    const b = createSim(world, 2);
+    run(a, world, TICKS);
+    run(b, world, TICKS);
     expect(hashState(a)).not.toBe(hashState(b));
   });
 
   it('matches a recorded fingerprint', () => {
-    const sim = createSim(house, 1985);
-    run(sim, house, TICKS);
+    const sim = createSim(world, 1985);
+    run(sim, world, TICKS);
     // If this changes, sim behaviour changed. Update it deliberately, not casually.
-    expect(hashState(sim)).toMatchInlineSnapshot(`"3200b4b1"`);
+    expect(hashState(sim)).toMatchInlineSnapshot(`"258f7122"`);
   });
 
   it('resumes identically from a JSON round-trip of its state', () => {
-    const straight = createSim(house, 77);
-    run(straight, house, TICKS);
+    const straight = createSim(world, 77);
+    run(straight, world, TICKS);
 
-    const first = createSim(house, 77);
-    run(first, house, TICKS / 2);
+    const first = createSim(world, 77);
+    run(first, world, TICKS / 2);
     const restored = JSON.parse(JSON.stringify(first)) as SimState;
-    run(restored, house, TICKS / 2);
+    run(restored, world, TICKS / 2);
 
     expect(restored).toEqual(straight);
   });
 
   it('applies commands deterministically', () => {
     const play = () => {
-      const sim = createSim(house, 5);
+      const sim = createSim(world, 5);
       for (let i = 0; i < 5000; i++) {
-        step(sim, house, i % 700 === 0 ? [{ type: 'goTo', node: house.nodeIds[i % house.nodeIds.length]! }] : []);
+        step(sim, world, i % 700 === 0 ? [{ type: 'goTo', node: world.house.nodeIds[i % world.house.nodeIds.length]! }] : []);
       }
       return hashState(sim);
     };
@@ -81,20 +81,20 @@ describe('seeded simulation', () => {
       throw new Error('Math.random used in sim');
     };
     try {
-      const sim = createSim(house, 3);
-      run(sim, house, 5000);
+      const sim = createSim(world, 3);
+      run(sim, world, 5000);
     } finally {
       Math.random = original;
     }
   });
 
   it('wanders around the whole house over time', () => {
-    const sim = createSim(house, 2024);
+    const sim = createSim(world, 2024, { timeScale: 60 });
     const rooms = new Set<string>();
     for (let i = 0; i < TICKS; i++) {
-      step(sim, house);
-      rooms.add(house.nodes.get(sim.person.at)!.room);
+      step(sim, world);
+      rooms.add(world.house.nodes.get(sim.person.at)!.room);
     }
-    expect(rooms.size).toBe(house.def.rooms.length);
+    expect(rooms.size).toBe(world.house.def.rooms.length);
   });
 });
