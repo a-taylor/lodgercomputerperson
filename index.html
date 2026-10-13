@@ -10,8 +10,14 @@
     <main>
       <canvas id="house" width="320" height="240" aria-label="Cutaway view of the house"></canvas>
       <p id="status" role="status" aria-live="polite"></p>
+      <form id="intro" hidden>
+        <p id="intro-text"></p>
+        <label>What's your name? <input id="player-name" autocomplete="given-name" maxlength="20" required /></label>
+        <label>Call him something else? <input id="tenant-name" maxlength="20" /></label>
+        <button type="submit">Say hello</button>
+      </form>
       <pre id="debug" hidden></pre>
-      <p class="hint">Click a spot to send him there. <kbd>D</kbd> shows his needs, <kbd>G</kbd> the floor graph. URL options: <code>?seed=123</code>, <code>?speed=60</code>.</p>
+      <p class="hint">Click a spot to send him there. <kbd>D</kbd> shows his needs, <kbd>G</kbd> the floor graph. URL options: <code>?seed=123</code>, <code>?speed=1</code> (real time; default 30), <code>?quick</code> (no wait for him to arrive), <code>?movedIn</code> (skip moving in).</p>
     </main>
     <script type="module" src="/src/main.ts"></script>
   </body>

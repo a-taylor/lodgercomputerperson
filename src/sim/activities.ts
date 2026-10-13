@@ -1,6 +1,7 @@
 // Activity library loaded from JSON. Each activity is a list of steps: walk to a node, then
 // spend some minutes there with per-hour effects on needs.
 import type { House } from './house';
+import { TRAIT_IDS, type TraitId } from './identity';
 import { EFFECT_KEYS, type EffectKey } from './needs';
 
 export type Pose = 'stand' | 'sit' | 'lie';
@@ -29,6 +30,8 @@ export interface ActivityDef {
   adverts: Effects;
   /** [fromHour, toHour, weight]; wraps past midnight when from > to. First match wins. */
   hours?: [number, number, number][];
+  /** Personality trait that makes him more or less keen on this. */
+  trait?: TraitId;
   /** Appeal drops if done this recently. */
   cooldownMinutes?: number;
   steps: StepDef[];
@@ -45,6 +48,7 @@ export function buildActivities(defs: ActivityDef[], house: House): ActivityLibr
     if (byId.has(a.id)) throw new Error(`Duplicate activity "${a.id}"`);
     if (a.steps.length === 0) throw new Error(`Activity "${a.id}" has no steps`);
     for (const key of Object.keys(a.adverts)) checkKey(a.id, key);
+    if (a.trait !== undefined && !TRAIT_IDS.includes(a.trait)) throw new Error(`Activity "${a.id}" uses unknown trait "${a.trait}"`);
     for (const [from, to] of a.hours ?? []) {
       if (from < 0 || from > 23 || to < 0 || to > 24) throw new Error(`Activity "${a.id}" has bad hours`);
     }

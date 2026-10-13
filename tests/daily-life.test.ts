@@ -29,7 +29,7 @@ interface Run {
 interface WeekLog {
   sim: SimState;
   runs: Run[];
-  /** Whether he was asleep at 03:00 and at 12:00 on each day. */
+  /** Whether he was asleep at 03:00 and at 12:00 (body clock) on each day. */
   asleepAt: Map<number, { night: boolean; noon: boolean }>;
   minNeed: number;
   minMood: number;
@@ -66,8 +66,10 @@ function liveAWeek(seed: number, timeScale: number): WeekLog {
     minNeed = Math.min(minNeed, sim.dog.food);
     if (sim.clock.ms > DAY_MS) minMood = Math.min(minMood, sim.person.mood);
 
-    const msOfDay = sim.clock.ms % DAY_MS;
-    const day = Math.floor(sim.clock.ms / DAY_MS);
+    // Sample at 03:00 and 12:00 by his body clock.
+    const bodyMs = sim.clock.ms - Math.round(sim.person.identity.chronotype * HOUR_MS);
+    const msOfDay = bodyMs % DAY_MS;
+    const day = Math.floor(bodyMs / DAY_MS);
     const slot = asleepAt.get(day) ?? { night: false, noon: false };
     if (Math.abs(msOfDay - 3 * HOUR_MS) < sim.clock.msPerTick) slot.night = isAsleep(sim, world);
     if (Math.abs(msOfDay - 12 * HOUR_MS) < sim.clock.msPerTick) slot.noon = isAsleep(sim, world);
@@ -83,6 +85,11 @@ function runsOnDay(log: WeekLog, day: number): Run[] {
 
 function hourOf(ms: number): number {
   return (ms % DAY_MS) / HOUR_MS;
+}
+
+/** Hour by his body clock, so early birds and night owls are judged by their own day. */
+function bodyHourOf(sim: SimState, ms: number): number {
+  return hourOf(ms - sim.person.identity.chronotype * HOUR_MS + DAY_MS);
 }
 
 function checkWeek(log: WeekLog): void {
@@ -114,7 +121,7 @@ function checkWeek(log: WeekLog): void {
 
     const bedtimes = today.filter((r) => r.id === 'sleep' && r.end - r.start > 4 * HOUR_MS);
     expect(bedtimes.length, ctx).toBe(1);
-    expect(hourOf(bedtimes[0]!.start), ctx).toBeGreaterThanOrEqual(19);
+    expect(bodyHourOf(sim, bedtimes[0]!.start), ctx).toBeGreaterThanOrEqual(19);
     expect(log.asleepAt.get(day)!.night, `${ctx} 03:00`).toBe(true);
     expect(log.asleepAt.get(day)!.noon, `${ctx} 12:00`).toBe(false);
 
@@ -123,8 +130,10 @@ function checkWeek(log: WeekLog): void {
     expect(count('feedDog'), ctx).toBeGreaterThanOrEqual(1);
     expect(new Set(today.filter((r) => LEISURE.includes(r.id)).map((r) => r.id)).size, ctx).toBeGreaterThanOrEqual(2);
 
-    // Meals happen at mealtimes, not at 3am.
-    for (const meal of today.filter((r) => r.id === 'eat')) expect(hourOf(meal.start), ctx).toBeGreaterThanOrEqual(5);
+    // Meals happen at mealtimes, not at 3am, unless he's a night snacker.
+    if (!sim.person.identity.quirks.includes('nightSnacker')) {
+      for (const meal of today.filter((r) => r.id === 'eat')) expect(bodyHourOf(sim, meal.start), ctx).toBeGreaterThanOrEqual(5);
+    }
 
     daySequences.add(today.filter((r) => r.id !== 'potter').map((r) => r.id).join(','));
   }

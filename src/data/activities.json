@@ -39,6 +39,7 @@
     },
     {
       "id": "wash",
+      "trait": "tidy",
       "label": "getting washed",
       "adverts": { "hygiene": 60 },
       "hours": [[6, 10, 1.8], [22, 6, 0.2]],
@@ -49,9 +50,10 @@
     },
     {
       "id": "tv",
+      "trait": "telly",
       "label": "watching TV",
       "kind": "leisure",
-      "base": 0.05,
+      "base": 0.07,
       "cooldownMinutes": 240,
       "adverts": { "fun": 50 },
       "hours": [[0, 7, 0.1]],
@@ -61,9 +63,10 @@
     },
     {
       "id": "read",
+      "trait": "bookish",
       "label": "reading",
       "kind": "leisure",
-      "base": 0.05,
+      "base": 0.07,
       "cooldownMinutes": 240,
       "adverts": { "fun": 45 },
       "hours": [[0, 7, 0.1]],
@@ -74,9 +77,10 @@
     },
     {
       "id": "piano",
+      "trait": "musical",
       "label": "playing the piano",
       "kind": "leisure",
-      "base": 0.05,
+      "base": 0.07,
       "cooldownMinutes": 240,
       "adverts": { "fun": 45 },
       "hours": [[22, 8, 0.05]],
@@ -98,7 +102,7 @@
       "id": "potter",
       "label": "pottering about",
       "kind": "idle",
-      "base": 0.06,
+      "base": 0.05,
       "adverts": {},
       "steps": [{ "node": "*", "minutes": [3, 12], "label": "pottering about" }]
     }
