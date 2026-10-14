@@ -41,8 +41,13 @@ export interface FurnitureDef {
   art: string;
   /** The node where he uses it. Decorations don't have one. */
   use?: string;
-  /** For beds and baths: where he lies (height off the floor, pillow end, sideways nudge). */
+  /** For beds: where he lies (height off the floor, pillow end, sideways nudge). */
   lie?: { height: number; headRight?: boolean; dx?: number };
+  /**
+   * For things he sits inside, like the bath: how high he sits, and the image row where the front
+   * begins. The front is drawn again over him so he's in it, not on it.
+   */
+  sitIn?: { seatHeight: number; frontFromRow: number };
 }
 
 /** The outer frame on the 8-pixel tile grid. */

@@ -592,8 +592,9 @@
       "x": 128,
       "art": "pack:Furniture/BarthTub",
       "use": "bathroom.bath",
-      "lie": {
-        "height": 8
+      "sitIn": {
+        "seatHeight": 3,
+        "frontFromRow": 23
       }
     },
     {

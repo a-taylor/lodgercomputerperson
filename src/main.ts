@@ -1,4 +1,4 @@
-import { drawHouse, loadArt } from './render/canvas';
+import { drawFront, drawHouse, loadArt } from './render/canvas';
 import { drawDog, drawFigure, drawOutlined } from './render/sprites';
 import { GAME_NAMES, type GameKind } from './sim/games';
 import type { DeliveryItem } from './sim/interactions';
@@ -559,13 +559,18 @@ function frame(now: number): void {
     );
   }
   if (p.present && p.alive) {
-    drawOutlined(ctx, px, py, (c, x, y) => drawFigure(c, p.identity.look, {
+    const pose = p.activity?.doing ? (currentStep(sim, world)?.pose ?? 'stand') : 'stand';
+    const using = house.def.furniture.find((f) => f.use === p.at);
+    // Sitting in the bath: lower him in, then draw the tub's front over him.
+    const inside = pose === 'sit' && p.path.length === 0 && using?.sitIn ? using : null;
+    drawOutlined(ctx, px, py - (inside?.sitIn!.seatHeight ?? 0), (c, x, y) => drawFigure(c, p.identity.look, {
       x,
       y,
       facing: p.facing,
       walking: p.path.length > 0,
-      pose: p.activity?.doing ? (currentStep(sim, world)?.pose ?? 'stand') : 'stand',
-      lie: house.def.furniture.find((f) => f.use === p.at && f.lie)?.lie,
+      pose,
+      lie: using?.lie,
+      bare: inside !== null,
       asleep: isAsleep(sim, world),
       carrying: p.carrying,
       humming: p.identity.quirks.includes('hummer'),
@@ -573,6 +578,7 @@ function frame(now: number): void {
       mood: p.mood,
       tick: sim.tick,
     }));
+    if (inside) drawFront(ctx, house, art, inside);
   }
   updateOverlays(px, py);
   updateControls();

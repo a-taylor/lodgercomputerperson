@@ -204,7 +204,7 @@
             20
           ],
           "label": "having a bath",
-          "pose": "lie",
+          "pose": "sit",
           "rates": {
             "hygiene": 220
           }

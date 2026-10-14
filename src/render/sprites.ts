@@ -13,6 +13,8 @@ export interface FigurePose {
   humming: boolean;
   /** Green about the gills. */
   sick: boolean;
+  /** In the bath: no shirt. */
+  bare?: boolean;
   /** When lying down: how high off the floor, which end his head is, and a nudge sideways. */
   lie?: LieSpot;
   mood: number;
@@ -112,7 +114,7 @@ export function drawFigure(ctx: CanvasRenderingContext2D, look: Look, pose: Figu
     ctx.fillRect(x - 3 + stride, y - legs, 2, legs);
     ctx.fillRect(x + 1 - stride, y - legs, 2, legs);
   }
-  ctx.fillStyle = look.shirt;
+  ctx.fillStyle = pose.bare ? skin : look.shirt;
   ctx.fillRect(x - 3, torsoTop, 7, y - torsoTop - (sitting ? 6 : legs));
   if (dancing) {
     // Arms up, waving in time.

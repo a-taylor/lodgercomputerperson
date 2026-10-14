@@ -5,6 +5,8 @@ import { bakeSprites, P, type DrawnKey } from './drawnSprites';
 import { drawAt, loadPack, need, type Pack } from './pack';
 
 const T = 8;
+/** The pack's inner-wall post is 4 px wide, starting 2 px into its tile: its centre is 4 px in. */
+const POST_MID = 4;
 
 export interface Art {
   pack: Pack;
@@ -38,19 +40,27 @@ export function drawHouse(ctx: CanvasRenderingContext2D, house: House, art: Art,
   ctx.fillRect(0, groundY + 4, width, height - groundY - 4);
   drawRoof(ctx, leftCol * T - 6, (rightCol + 1) * T + 6, roofRow * T + 1);
 
-  // Wallpaper, room by room, with the pack's edge pieces tucked under the outer walls.
+  // Wallpaper, room by room, with the pack's edge pieces tucked under the outer walls. Between
+  // rooms the post sits mid-tile, so each room's paper is clipped to the post's centre line.
   for (const room of house.def.rooms) {
     const floor = house.def.floors.find((f) => f.id === room.floor)!;
     const atLeft = room.x0 === (leftCol + 1) * T;
     const atRight = room.x1 === rightCol * T;
     const c0 = atLeft ? leftCol : room.x0 / T;
     const c1 = room.x1 / T;
+    const clipLeft = atLeft ? 0 : room.x0 + POST_MID;
+    const clipRight = atRight ? width : room.x1 + POST_MID;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(clipLeft, 0, clipRight - clipLeft, height);
+    ctx.clip();
     for (let row = floor.ceilingY / T; row < floor.floorY / T; row++) {
       for (let col = c0; col <= c1; col++) {
         const piece = atLeft && col === c0 ? 'Left' : atRight && col === c1 ? 'Right' : 'Tile';
         tile(`${room.wallpaper}_${piece}`, col, row);
       }
     }
+    ctx.restore();
   }
 
   // Things on the walls first, then stairs, then furniture standing on the floor.
@@ -88,6 +98,16 @@ function drawFurniture(ctx: CanvasRenderingContext2D, art: Art, f: FurnitureDef,
     const img = frames[Math.floor(tick / 12) % frames.length]!;
     ctx.drawImage(img, f.x, bottom - img.height);
   }
+}
+
+/** Redraws the front of something he's sitting in (rows from sitIn.frontFromRow down), over him. */
+export function drawFront(ctx: CanvasRenderingContext2D, house: House, art: Art, f: FurnitureDef): void {
+  if (!f.sitIn || !f.art.startsWith('pack:')) return;
+  const img = need(art.pack, f.art.slice('pack:'.length));
+  const floor = house.def.floors.find((fl) => fl.id === house.def.rooms.find((r) => r.id === f.room)!.floor)!;
+  const top = floor.floorY - (f.elevation ?? 0) - img.height;
+  const row = f.sitIn.frontFromRow;
+  ctx.drawImage(img, 0, row, img.width, img.height - row, f.x, top + row, img.width, img.height - row);
 }
 
 interface Flight {
