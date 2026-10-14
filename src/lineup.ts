@@ -1,6 +1,6 @@
 // Dev page: seeded tenants side by side, to eyeball that seeds look different.
 import { drawDogSprite, loadDogSheets } from './render/dogArt';
-import { drawFigure } from './render/sprites';
+import { drawTenantSprite, loadTenantSheet } from './render/tenantArt';
 import { generateIdentity } from './sim/identity';
 
 const SCALE = 5;
@@ -16,6 +16,7 @@ canvas.style.height = `${canvas.height * SCALE}px`;
 canvas.style.maxWidth = '100%';
 const ctx = canvas.getContext('2d')!;
 const dogSheets = await loadDogSheets();
+const tenantSheet = await loadTenantSheet();
 
 let tick = 0;
 function frame(): void {
@@ -26,7 +27,7 @@ function frame(): void {
   seeds.forEach((seed, i) => {
     const { person, dog } = generateIdentity(seed);
     const x = i * CELL + 14;
-    drawFigure(ctx, person.look, {
+    drawTenantSprite(ctx, tenantSheet, person.look, {
       x,
       y: 40,
       facing: 1,
@@ -35,8 +36,7 @@ function frame(): void {
       asleep: false,
       carrying: false,
       humming: person.quirks.includes('hummer'),
-      sick: i === seeds.length - 1 && seeds.length > 1,
-      mood: i % 3 === 0 ? 20 : i % 3 === 1 ? 55 : 85,
+      sick: false,
       tick,
     });
     drawDogSprite(ctx, dogSheets, dog.breed, { x: x + 22, y: 40, facing: -1, walking: false, stillTicks: 0, tick });

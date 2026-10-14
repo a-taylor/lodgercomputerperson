@@ -1,12 +1,36 @@
-// The tenant drawn from Penzilla's "Free Protagonist" sheet (Graphics created by Penzilla Design).
+// The tenant, drawn from Penzilla's "Free Protagonist" sheet (Graphics created by Penzilla Design).
 // The free sheet is plain white; on screen he's coloured by region (skin, shirt, trousers, and
 // green when sick) and mirrored to face left. These are display-time edits, listed in CREDITS.md.
-import type { FigurePose } from './sprites';
-import { glyph, NOTE, Z } from './sprites';
+import type { Pose } from '../sim/activities';
 
 const url = Object.values(
   import.meta.glob('../../assets/penzilla-protagonist/AnimationSheet.png', { eager: true, query: '?url', import: 'default' }),
 )[0] as string;
+
+export interface TenantPose {
+  x: number;
+  /** Floor level: where his feet go. */
+  y: number;
+  facing: -1 | 1;
+  walking: boolean;
+  pose: Pose;
+  asleep: boolean;
+  carrying: boolean;
+  humming: boolean;
+  /** Green about the gills. */
+  sick: boolean;
+  /** In the bath: no shirt. */
+  bare?: boolean;
+  /** When lying down: how high off the floor, which end his head is, and a nudge sideways. */
+  lie?: LieSpot;
+  tick: number;
+}
+
+export interface LieSpot {
+  height: number;
+  headRight?: boolean;
+  dx?: number;
+}
 
 const SIZE = 24;
 const COLS = 8;
@@ -97,7 +121,7 @@ export interface TenantColours {
   trousers: string;
 }
 
-function frameFor(pose: FigurePose): number {
+function frameFor(pose: TenantPose): number {
   const loop = (frames: readonly number[], every: number) => frames[Math.floor(pose.tick / every) % frames.length]!;
   if (pose.walking) return loop(ANIM.walk, 5);
   switch (pose.pose) {
@@ -114,7 +138,7 @@ function frameFor(pose: FigurePose): number {
   }
 }
 
-export function drawTenantSprite(ctx: CanvasRenderingContext2D, sheet: TenantSheet, colours: TenantColours, pose: FigurePose, scale = 1): void {
+export function drawTenantSprite(ctx: CanvasRenderingContext2D, sheet: TenantSheet, colours: TenantColours, pose: TenantPose): void {
   const frame = frameFor(pose);
   const lying = pose.pose === 'lie' && !pose.walking;
   const spot = lying ? (pose.lie ?? { height: 6 }) : null;
@@ -156,19 +180,18 @@ export function drawTenantSprite(ctx: CanvasRenderingContext2D, sheet: TenantShe
   // Feet (or, lying, his side) on the floor or the bed; frames face right.
   const x = Math.round(pose.x) + (spot?.dx ?? 0);
   const bottom = Math.round(pose.y) - (spot?.height ?? 0);
-  const out = Math.round(SIZE * scale);
-  const dx = x - Math.round(out / 2);
-  const dy = bottom - out;
+  const dx = x - SIZE / 2;
+  const dy = bottom - SIZE;
   // Frames face right; the lying frame has its head on the right.
   const faceLeft = lying ? !spot!.headRight : pose.facing === -1;
   if (faceLeft) {
     ctx.save();
-    ctx.translate(dx + out, dy);
+    ctx.translate(dx + SIZE, dy);
     ctx.scale(-1, 1);
-    ctx.drawImage(scratch, 0, 0, SIZE, SIZE, 0, 0, out, out);
+    ctx.drawImage(scratch, 0, 0);
     ctx.restore();
   } else {
-    ctx.drawImage(scratch, 0, 0, SIZE, SIZE, dx, dy, out, out);
+    ctx.drawImage(scratch, dx, dy);
   }
 
   if (pose.carrying) {
@@ -188,4 +211,13 @@ export function drawTenantSprite(ctx: CanvasRenderingContext2D, sheet: TenantShe
   if (pose.humming && pose.walking && Math.floor(pose.tick / 30) % 2 === 0) {
     glyph(ctx, NOTE, x + (pose.facing === 1 ? 5 : -9), bottom - 24 - (Math.floor(pose.tick / 10) % 2));
   }
+}
+
+// Tiny pixel glyphs, drawn as pixels rather than font text so they stay crisp.
+const Z = ['xxx', '..x', '.x.', 'x..', 'xxx'];
+const NOTE = ['..xx', '..x.', '..x.', 'xxx.', 'xx..'];
+
+function glyph(ctx: CanvasRenderingContext2D, rows: string[], x: number, y: number): void {
+  ctx.fillStyle = '#ffffff';
+  rows.forEach((row, j) => [...row].forEach((ch, i) => ch === 'x' && ctx.fillRect(x + i, y + j, 1, 1)));
 }

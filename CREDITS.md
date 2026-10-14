@@ -5,7 +5,7 @@
 **Graphics created by Penzilla Design.**
 House interior pack: [Platformer House Interior (Pixel Art)](https://penzilla.itch.io/house-interior), used under the Penzilla Design Standard Licence (`assets/penzilla/PenzillaDesign_StandardLicense.pdf`).
 
-Tenant (trial): [Free Protagonist (Animated Character)](https://penzilla.itch.io/protagonist-character), also by Penzilla Design, same licence (`assets/penzilla-protagonist/`).
+Tenant: [Free Protagonist (Animated Character)](https://penzilla.itch.io/protagonist-character), also by Penzilla Design, same licence (`assets/penzilla-protagonist/`).
 
 ### Edits to the Penzilla assets
 
@@ -29,7 +29,6 @@ Changes: none to the artwork. The sprite sheets are used exactly as supplied; wh
 Everything else is original to this project:
 
 - Extra furniture the pack doesn't include (piano, fireplace, telephone table, dog bowl, record player, typewriter desk, computer desk, grandfather clock, games cabinet, wardrobe, exercise rug). These are drawn in code in `src/render/drawnSprites.ts`, using the pack's colour palette so they sit alongside it. They are not derived from the pack's image files.
-- The tenant, drawn in code in `src/render/sprites.ts`.
 
 ## Licence obligations to remember
 

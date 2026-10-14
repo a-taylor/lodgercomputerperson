@@ -1,7 +1,6 @@
 import { drawFront, drawHouse, loadArt } from './render/canvas';
 import { drawDogSprite, loadDogSheets } from './render/dogArt';
-import { drawFigure, drawOutlined, type FigurePose } from './render/sprites';
-import { drawTenantSprite, loadTenantSheet } from './render/tenantArt';
+import { drawTenantSprite, loadTenantSheet, type TenantPose } from './render/tenantArt';
 import { GAME_NAMES, type GameKind } from './sim/games';
 import type { DeliveryItem } from './sim/interactions';
 import { NEED_IDS } from './sim/needs';
@@ -107,10 +106,6 @@ const pending: Command[] = [];
 const art = await loadArt();
 const dogSheets = await loadDogSheets();
 const tenantSheet = await loadTenantSheet();
-// Trial: the tenant from Penzilla's character sheet; ?figure=code shows the old code-drawn one.
-const packFigure = params.get('figure') !== 'code';
-// Trial: ?tenantScale=1.5 or 2 to see him bigger.
-const tenantScale = Number(params.get('tenantScale')) || 1;
 // ?debug exposes the running game to the console, for poking at it while developing.
 if (params.has('debug')) Object.assign(window, { lcp: { sim, world } });
 
@@ -596,7 +591,7 @@ function frame(now: number): void {
     const using = house.def.furniture.find((f) => f.use === p.at);
     // Sitting in the bath: lower him in, then draw the tub's front over him.
     const inside = pose === 'sit' && p.path.length === 0 && using?.sitIn ? using : null;
-    const figure: FigurePose = {
+    const figure: TenantPose = {
       x: px,
       y: py - (inside?.sitIn!.seatHeight ?? 0),
       facing: p.facing,
@@ -608,11 +603,9 @@ function frame(now: number): void {
       carrying: p.carrying,
       humming: p.identity.quirks.includes('hummer'),
       sick: p.sick,
-      mood: p.mood,
       tick: sim.tick,
     };
-    if (packFigure) drawTenantSprite(ctx, tenantSheet, p.identity.look, figure, tenantScale);
-    else drawOutlined(ctx, figure.x, figure.y, (c, x, y) => drawFigure(c, p.identity.look, { ...figure, x, y }));
+    drawTenantSprite(ctx, tenantSheet, p.identity.look, figure);
     if (inside) drawFront(ctx, house, art, inside);
   }
   updateOverlays(px, py);
