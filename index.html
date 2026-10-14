@@ -14,6 +14,11 @@
         <div id="caption" hidden aria-hidden="true"></div>
       </div>
       <p id="status" role="status" aria-live="polite"></p>
+      <div id="speed">
+        <label for="speed-input">Speed</label>
+        <input id="speed-input" type="range" min="0" step="1" aria-describedby="speed-output" />
+        <output id="speed-output" for="speed-input"></output>
+      </div>
       <div id="speech-log" class="visually-hidden" aria-live="polite"></div>
 
       <form id="intro" hidden>
@@ -72,7 +77,7 @@
       <p class="hint">
         Shortcuts: <kbd>Alt</kbd>+<kbd>F</kbd> food, <kbd>W</kbd> water, <kbd>D</kbd> dog food, <kbd>R</kbd> record, <kbd>B</kbd> book,
         <kbd>T</kbd> pat, <kbd>P</kbd> phone, <kbd>A</kbd> alarm, <kbd>C</kbd> games, <kbd>L</kbd> letters. <kbd>Alt</kbd>+<kbd>N</kbd> needs panel, <kbd>Alt</kbd>+<kbd>G</kbd> floor graph.
-        URL: <code>?seed=123</code>, <code>?speed=1</code> (real time; default 30), <code>?quick</code>, <code>?movedIn</code>.
+        URL: <code>?seed=123</code>, <code>?speed=1</code> (starting speed; default 30), <code>?quick</code>, <code>?movedIn</code>.
       </p>
     </main>
     <script type="module" src="/src/main.ts"></script>

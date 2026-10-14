@@ -141,7 +141,12 @@ export type Command =
   | { type: 'invite'; game?: GameKind }
   /** Your answer when he asks you to play. */
   | { type: 'answerInvite'; accept: boolean }
-  | { type: 'readLetter'; id: number };
+  | { type: 'readLetter'; id: number }
+  /** Game seconds per real second. Not an interaction with him, and works even while he moves in. */
+  | { type: 'setSpeed'; timeScale: number };
+
+/** The fastest the clock may run: an hour of his day per real second. */
+export const MAX_TIME_SCALE = 3600;
 
 export interface SimOptions {
   /** Minute of day the clock starts at. Default 08:00. */
@@ -158,7 +163,7 @@ export interface SimOptions {
 
 export function createSim(world: World, seed: number, options: SimOptions = {}): SimState {
   const { startMinute = 8 * 60, timeScale = 1, startEmpty = false, emptyTicks = DEFAULT_EMPTY_TICKS } = options;
-  if (!Number.isInteger(timeScale) || timeScale < 1) throw new Error('timeScale must be a positive integer');
+  if (!validTimeScale(timeScale)) throw new Error(`timeScale must be an integer from 1 to ${MAX_TIME_SCALE}`);
   const rng = createRng(seed);
   const generated = generateIdentity(seed);
   const identity = structuredClone(options.identity ?? generated.person);
@@ -213,6 +218,15 @@ export function createSim(world: World, seed: number, options: SimOptions = {}):
   };
 }
 
+function validTimeScale(n: number): boolean {
+  return Number.isInteger(n) && n >= 1 && n <= MAX_TIME_SCALE;
+}
+
+/** How many times faster than real time his clock is running. */
+export function timeScaleOf(state: SimState): number {
+  return state.clock.msPerTick / TICK_MS;
+}
+
 export function hourOfDay(state: SimState): number {
   return Math.floor((state.clock.ms % DAY_MS) / HOUR_MS);
 }
@@ -239,6 +253,9 @@ export function isAsleep(state: SimState, world: World): boolean {
 /** Advances one tick in place. Commands apply at the start of the tick. */
 export function step(state: SimState, world: World, commands: readonly Command[] = []): void {
   const p = state.person;
+  for (const cmd of commands) {
+    if (cmd.type === 'setSpeed' && validTimeScale(cmd.timeScale)) state.clock.msPerTick = TICK_MS * cmd.timeScale;
+  }
   if (state.moveIn.stage !== 'done') {
     // Nothing the player does counts until he has moved in.
     stepMoveIn(state, world);
@@ -267,6 +284,7 @@ export function run(state: SimState, world: World, ticks: number): void {
 }
 
 function applyCommand(state: SimState, world: World, cmd: Command): void {
+  if (cmd.type === 'setSpeed') return; // handled in step(), and not a sign of company
   if (!state.person.alive && cmd.type !== 'introduce') return;
   // Anything you do counts as company.
   state.lastInteractionMs = state.clock.ms;

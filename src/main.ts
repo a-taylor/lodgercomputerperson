@@ -3,7 +3,7 @@ import { drawDog, drawFigure } from './render/sprites';
 import { GAME_NAMES, type GameKind } from './sim/games';
 import type { DeliveryItem } from './sim/interactions';
 import { NEED_IDS } from './sim/needs';
-import { createSim, currentStep, DAY_MS, HOUR_MS, isAsleep, step, TICK_MS, type Command } from './sim/sim';
+import { createSim, currentStep, DAY_MS, HOUR_MS, isAsleep, step, TICK_MS, timeScaleOf, type Command } from './sim/sim';
 import { defaultWorld } from './sim/world';
 import { renderGame } from './ui/gamePanel';
 
@@ -19,10 +19,16 @@ if (!Number.isFinite(seed) || seed === 0) {
   params.set('seed', String(seed));
   history.replaceState(null, '', `?${params}`);
 }
-// His day runs 30x faster than real time by default (a day lasts 48 minutes); ?speed=1 for real time.
+// His day runs 30x faster than real time by default (a day lasts 48 minutes). The speed slider
+// changes it while playing; ?speed= sets where it starts and is kept in step with the slider.
+const SPEEDS = [1, 2, 5, 10, 20, 30, 60, 120, 300, 600];
 const DEFAULT_SPEED = 30;
 const speedParam = Math.round(Number(params.get('speed')));
-const timeScale = Number.isFinite(speedParam) && speedParam >= 1 ? Math.min(speedParam, 3600) : DEFAULT_SPEED;
+const timeScale = nearestSpeed(Number.isFinite(speedParam) && speedParam >= 1 ? speedParam : DEFAULT_SPEED);
+
+function nearestSpeed(n: number): number {
+  return SPEEDS.reduce((best, s) => (Math.abs(Math.log(s / n)) < Math.abs(Math.log(best / n)) ? s : best));
+}
 // The clock starts at the player's local time.
 const now = new Date();
 const sim = createSim(world, seed, {
@@ -189,6 +195,35 @@ lettersButton.addEventListener('click', openLetters);
 $<HTMLButtonElement>('#letter-prev').addEventListener('click', () => (letterIndex--, showLetter()));
 $<HTMLButtonElement>('#letter-next').addEventListener('click', () => (letterIndex++, showLetter()));
 $<HTMLButtonElement>('#letter-close').addEventListener('click', () => letterDialog.close());
+
+// Speed slider: a log-ish ladder of speeds, so one notch is always a noticeable change.
+const speedInput = $<HTMLInputElement>('#speed-input');
+const speedOutput = $<HTMLOutputElement>('#speed-output');
+speedInput.max = String(SPEEDS.length - 1);
+speedInput.value = String(SPEEDS.indexOf(timeScale));
+
+function dayLength(scale: number): string {
+  if (scale === 1) return 'real time';
+  const minutes = (24 * 60) / scale;
+  if (minutes >= 60) return `a day takes ${+(minutes / 60).toFixed(1)} h`;
+  if (minutes >= 1) return `a day takes ${+minutes.toFixed(1)} min`;
+  return `a day takes ${Math.round(minutes * 60)} s`;
+}
+
+function showSpeed(scale: number): void {
+  speedOutput.textContent = `${scale}× · ${dayLength(scale)}`;
+  speedInput.setAttribute('aria-valuetext', `${scale} times, ${dayLength(scale)}`);
+}
+showSpeed(timeScale);
+
+speedInput.addEventListener('input', () => {
+  const scale = SPEEDS[Number(speedInput.value)]!;
+  // Straight into the queue: speed works during moving in too, and isn't company for him.
+  pending.push({ type: 'setSpeed', timeScale: scale });
+  showSpeed(scale);
+  params.set('speed', String(scale));
+  history.replaceState(null, '', `?${params}`);
+});
 
 talk.addEventListener('submit', (e) => {
   e.preventDefault();
@@ -386,7 +421,7 @@ function frame(now: number): void {
       `body clock ${id.chronotype > 0 ? '+' : ''}${id.chronotype.toFixed(1)}h, pace ${id.pace}, appetite ${id.appetite}`,
       `quirks: ${id.quirks.join(', ')} · likes ${id.favouriteMusic} and ${id.favouriteFood}`,
       `dog: ${dog.identity.name}, ${dog.identity.size} · records: ${sim.supplies.records.join(', ')}`,
-      `player: ${sim.playerName ?? '?'} · seed ${seed} · speed ${timeScale}x · day ${Math.floor(sim.clock.ms / DAY_MS)}`,
+      `player: ${sim.playerName ?? '?'} · seed ${seed} · speed ${timeScaleOf(sim)}x · day ${Math.floor(sim.clock.ms / DAY_MS)}`,
     ].join('\n');
   }
   requestAnimationFrame(frame);
