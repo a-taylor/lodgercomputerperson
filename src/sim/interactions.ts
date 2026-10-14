@@ -352,7 +352,7 @@ function touch(state: SimState): void {
   state.lastInteractionMs = state.clock.ms;
 }
 
-export type KnockReason = 'hello' | 'food' | 'water' | 'dogFood' | 'record' | 'lonely' | 'game';
+export type KnockReason = 'hello' | 'food' | 'water' | 'dogFood' | 'record' | 'lonely' | 'game' | 'sick' | 'dying';
 
 /** Why he might knock on the glass right now, and how badly he wants to. */
 export function wantsAttention(state: SimState): { reason: KnockReason; score: number } | null {
@@ -361,6 +361,9 @@ export function wantsAttention(state: SimState): { reason: KnockReason; score: n
   const since = (ms: number | null) => (ms === null ? Infinity : state.clock.ms - ms);
   // Having just moved in, the first thing he does is say hello through the glass.
   if (state.moveIn.played && state.playerName === null && state.lastKnockMs === null) return { reason: 'hello', score: 1 };
+  // Warnings come first and come more often: he's ill and wants you to know.
+  if (p.health < 25 && since(state.lastKnockMs) > HOUR_MS) return { reason: 'dying', score: 1 };
+  if (p.sick && since(state.lastKnockMs) > 3 * HOUR_MS) return { reason: 'sick', score: 0.8 };
   if (since(state.lastKnockMs) < 3 * HOUR_MS) return null;
 
   const wants: [KnockReason, number][] = [];

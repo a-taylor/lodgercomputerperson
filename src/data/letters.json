@@ -300,5 +300,29 @@
   "ps.typo": [
     "P.S. Sorry about any typos. This typewriter has a mind of its own.",
     "P.S. The letter E sticks. Sorry."
+  ],
+  "away.opening": [
+    "You were gone for {duration}.",
+    "While you were away, life went on.",
+    "Welcome back! You were away for {duration}.",
+    "There you are! It's been {duration}.",
+    "{duration} without you. I counted."
+  ],
+  "away.knocked": [
+    "I knocked on the glass {count}, but nobody answered.",
+    "I tried knocking {count}. Didn't you hear?"
+  ],
+  "away.slept": [
+    "I had a good long sleep.",
+    "I slept like a log, at least."
+  ],
+  "away.quiet": [
+    "Nothing much happened.",
+    "It was a quiet time, really."
+  ],
+  "health.sick": [
+    "I've been sick in bed.",
+    "I've been really poorly, {player}.",
+    "My face has gone a funny colour."
   ]
 }

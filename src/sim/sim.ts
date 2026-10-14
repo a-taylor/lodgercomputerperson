@@ -44,6 +44,9 @@ import { DAY_MS, HOUR_MS, MINUTE_MS, TICK_MS } from './time';
 export { DAY_MS, HOUR_MS, MINUTE_MS, TICK_MS };
 
 const WINDOW = 'study.window';
+/** Health below which he falls sick, and above which he's well again. */
+export const SICK_BELOW = 50;
+const WELL_ABOVE = 65;
 /** Activities scoring at least this fraction of the best are in the running. */
 const SHORTLIST = 0.4;
 /** Below this hour weight, an activity is out of its natural time. */
@@ -73,6 +76,8 @@ export interface PersonState extends Mover {
   /** 0 (miserable) to 100 (delighted). Drifts towards how well his needs are met. */
   mood: number;
   health: number;
+  /** Ill from neglect: green about the gills, keeps to his bed. Clears once health recovers. */
+  sick: boolean;
   alive: boolean;
 }
 
@@ -182,6 +187,7 @@ export function createSim(world: World, seed: number, options: SimOptions = {}):
     needs: { food: 70 + jitter(), water: 70 + jitter(), energy: 80 + jitter(), hygiene: 80 + jitter(), fun: 60 + jitter() },
     mood: 60,
     health: 100,
+    sick: false,
     alive: true,
   };
   placeAt(person, world.house, start);
@@ -345,6 +351,14 @@ export function scoreActivities(state: SimState, world: World): { id: string; sc
     }
     let weight = hourWeight(def, hour);
     if (snacker && def.id === 'eat') weight = Math.max(weight, 1);
+    if (state.person.sick) {
+      // Poorly: back to bed whatever the hour, and no heart for hobbies.
+      if (def.id === 'sleep') {
+        weight = Math.max(weight, 1);
+        score += 0.25;
+      }
+      if (def.kind === 'leisure') weight *= 0.4;
+    }
     const offHours = weight < OFF_HOURS;
     score *= weight;
     if (def.trait) score *= traitAffinity(identity.traits, def.trait);
@@ -494,6 +508,7 @@ function finishActivity(state: SimState, world: World, def: ActivityDef): void {
 function knockOnGlass(state: SimState, reason: KnockReason): void {
   state.knock = { seq: (state.knock?.seq ?? 0) + 1, reason, tick: state.tick };
   state.lastKnockMs = state.clock.ms;
+  remember(state, (log) => (log.knocks = (log.knocks ?? 0) + 1));
   if (reason === 'game') say(state, 'knock.game', { game: GAME_NAMES[invite(state)] });
   else say(state, `knock.${reason}`);
 }
@@ -520,6 +535,9 @@ function updateBody(state: SimState, world: World): void {
   if (starving > 0) p.health -= STARVING_DAMAGE * starving * hours;
   else if (p.needs.food > 30 && p.needs.water > 30) p.health += HEALTH_RECOVERY * hours;
   p.health = clampNeed(p.health);
+  // Hysteresis, so he doesn't flicker between sick and well.
+  if (!p.sick && p.health < SICK_BELOW) p.sick = true;
+  else if (p.sick && p.health >= WELL_ABOVE) p.sick = false;
   if (p.health <= 0) {
     p.alive = false;
     p.activity = null;
@@ -536,6 +554,7 @@ function updateBody(state: SimState, world: World): void {
   let target = 0.6 * (sum / NEED_IDS.length) + 0.4 * min;
   if (state.dog.food < 20) target -= 15;
   target *= p.health / 100;
+  if (p.sick) target *= 0.7;
   p.mood = clampNeed(p.mood + (target - p.mood) * Math.min(1, hours * 0.5));
 }
 

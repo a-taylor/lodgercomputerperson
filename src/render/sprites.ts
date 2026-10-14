@@ -11,13 +11,24 @@ export interface FigurePose {
   asleep: boolean;
   carrying: boolean;
   humming: boolean;
+  /** Green about the gills. */
+  sick: boolean;
+  mood: number;
   tick: number;
+}
+
+/** Sickly green mixed into his skin tone. */
+function sickly(hex: string): string {
+  const n = parseInt(hex.slice(1), 16);
+  const mix = (c: number, g: number) => Math.round(c * 0.55 + g * 0.45);
+  return `rgb(${mix((n >> 16) & 255, 150)},${mix((n >> 8) & 255, 190)},${mix(n & 255, 120)})`;
 }
 
 /** A roughly 7-wide figure with feet at (x, y). Sits or lies down for activities that ask for it. */
 export function drawFigure(ctx: CanvasRenderingContext2D, look: Look, pose: FigurePose): void {
   const x = Math.round(pose.x);
   const y = Math.round(pose.y);
+  const skin = pose.sick ? sickly(look.skin) : look.skin;
 
   if (pose.pose === 'lie') {
     // On the bed or in the bath: lying flat, head towards the wall.
@@ -26,7 +37,7 @@ export function drawFigure(ctx: CanvasRenderingContext2D, look: Look, pose: Figu
     ctx.fillRect(x, top, 7 + look.tall, 3);
     ctx.fillStyle = look.shirt;
     ctx.fillRect(x - 6, top, 7, 4);
-    ctx.fillStyle = look.skin;
+    ctx.fillStyle = skin;
     ctx.fillRect(x - 11, top - 1, 5, 5);
     if (look.hairStyle !== 'bald') {
       ctx.fillStyle = look.hair;
@@ -67,11 +78,11 @@ export function drawFigure(ctx: CanvasRenderingContext2D, look: Look, pose: Figu
   } else if (pose.pose === 'knock') {
     // Fist raised to the glass, knuckles towards you.
     ctx.fillRect(x + front * 4, torsoTop - 2, 1, 4);
-    ctx.fillStyle = look.skin;
+    ctx.fillStyle = skin;
     ctx.fillRect(x + front * 4 - (front === 1 ? 0 : 1), torsoTop - 4, 2, 2);
   }
 
-  ctx.fillStyle = look.skin;
+  ctx.fillStyle = skin;
   ctx.fillRect(x - 2, headTop, 5, 5);
   drawHair(ctx, look, x, headTop, front);
   ctx.fillStyle = '#000'; // eye shows which way he faces
@@ -80,13 +91,25 @@ export function drawFigure(ctx: CanvasRenderingContext2D, look: Look, pose: Figu
     ctx.fillStyle = '#222';
     ctx.fillRect(front === 1 ? x : x - 2, headTop + 2, 3, 1);
   }
+  // His mouth shows how he feels: a smile when happy, a droop when low.
+  if (look.facialHair !== 'beard') {
+    ctx.fillStyle = '#5a2a1a';
+    const mx = front === 1 ? x + 1 : x - 1;
+    if (pose.mood < 35) {
+      ctx.fillRect(mx, headTop + 4, 2, 1);
+      ctx.fillRect(front === 1 ? mx + 2 : mx - 1, headTop + 5, 1, 1);
+    } else if (pose.mood >= 70) {
+      ctx.fillRect(mx, headTop + 4, 1, 1);
+      ctx.fillRect(front === 1 ? mx + 1 : mx - 1, headTop + 3, 1, 1);
+    }
+  }
   if (look.facialHair === 'moustache') {
     ctx.fillStyle = look.hair;
     ctx.fillRect(front === 1 ? x + 1 : x - 1, headTop + 3, 2, 1);
   } else if (look.facialHair === 'beard') {
     ctx.fillStyle = look.hair;
     ctx.fillRect(x - 2, headTop + 3, 5, 2);
-    ctx.fillStyle = look.skin;
+    ctx.fillStyle = skin;
     ctx.fillRect(x + front, headTop + 3, 1, 1);
   }
 

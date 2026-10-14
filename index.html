@@ -28,6 +28,14 @@
         <button type="submit">Say hello</button>
       </form>
 
+      <section id="farewell" hidden aria-labelledby="farewell-text">
+        <p id="farewell-text"></p>
+        <div class="row">
+          <button type="button" id="new-tenant">Welcome a new tenant</button>
+          <button type="button" class="open-memorial">Remember him</button>
+        </div>
+      </section>
+
       <div id="invite" hidden role="alert">
         <span id="invite-text"></span>
         <button type="button" data-answer="yes">Yes, let's play</button>
@@ -73,11 +81,28 @@
         </div>
       </dialog>
 
+      <details id="more">
+        <summary>Saving &amp; more</summary>
+        <p id="save-status"></p>
+        <div class="row">
+          <button type="button" id="export-save">Export save</button>
+          <button type="button" id="import-save">Import save…</button>
+          <input type="file" id="import-file" accept="application/json,.json" hidden />
+          <button type="button" class="open-memorial">Memorial</button>
+        </div>
+      </details>
+
+      <dialog id="memorial-dialog" aria-labelledby="memorial-heading">
+        <h2 id="memorial-heading">In memory</h2>
+        <div id="memorial-list"></div>
+        <div class="row"><button type="button" id="memorial-close">Close</button></div>
+      </dialog>
+
       <pre id="debug" hidden></pre>
       <p class="hint">
         Shortcuts: <kbd>Alt</kbd>+<kbd>F</kbd> food, <kbd>W</kbd> water, <kbd>D</kbd> dog food, <kbd>R</kbd> record, <kbd>B</kbd> book,
         <kbd>T</kbd> pat, <kbd>P</kbd> phone, <kbd>A</kbd> alarm, <kbd>C</kbd> games, <kbd>L</kbd> letters. <kbd>Alt</kbd>+<kbd>N</kbd> needs panel, <kbd>Alt</kbd>+<kbd>G</kbd> floor graph.
-        URL: <code>?seed=123</code>, <code>?speed=1</code> (starting speed; default 30), <code>?quick</code>, <code>?movedIn</code>.
+        URL: <code>?seed=123</code>, <code>?speed=1</code> (starting speed; default 30), <code>?quick</code>, <code>?movedIn</code>, <code>?fresh</code> (ignore the save and start again; it will be overwritten).
       </p>
     </main>
     <script type="module" src="/src/main.ts"></script>

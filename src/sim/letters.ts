@@ -35,11 +35,33 @@ export function countPhrase(n: number): string {
   return n < NUMBER_WORDS.length ? NUMBER_WORDS[n]! : 'lots of times';
 }
 
+/** "half an hour", "an hour", "12 hours", "3 days and 2 hours". */
+export function durationPhrase(ms: number): string {
+  const minutes = Math.round(ms / 60_000);
+  if (minutes < 45) return minutes <= 1 ? 'a minute' : minutes < 35 && minutes > 25 ? 'half an hour' : `${minutes} minutes`;
+  const hours = Math.round(ms / HOUR_MS);
+  if (hours < 24) return hours === 1 ? 'an hour' : `${hours} hours`;
+  const days = Math.floor(ms / DAY_MS);
+  const rest = Math.round((ms - days * DAY_MS) / HOUR_MS);
+  const d = days === 1 ? 'a day' : `${days} days`;
+  return rest === 0 ? d : `${d} and ${rest === 1 ? 'an hour' : `${rest} hours`}`;
+}
+
+/** A letter that covers your absence. */
+export interface AwayNote {
+  /** Game time you left. */
+  fromMs: number;
+  durationMs: number;
+}
+
 /** What the letter is about, worked out from his state and memory before any words are chosen. */
 export interface LetterFacts {
   mood: 'great' | 'good' | 'ok' | 'low' | 'awful';
   need: string | null;
   poorly: boolean;
+  sick: boolean;
+  /** Set for a "while you were away" letter. */
+  away: { duration: string; knocks: number; slept: boolean } | null;
   did: [string, number][];
   events: string[];
   games: { line: string; slots: Record<string, string> } | null;
@@ -51,9 +73,9 @@ export interface LetterFacts {
   game: GameKind;
 }
 
-export function gatherFacts(state: SimState): LetterFacts {
+export function gatherFacts(state: SimState, away?: AwayNote): LetterFacts {
   const p = state.person;
-  const fromMs = Math.max(state.lastLetterMs ?? state.clock.ms - 3 * DAY_MS, state.clock.ms - 7 * DAY_MS);
+  const fromMs = away?.fromMs ?? Math.max(state.lastLetterMs ?? state.clock.ms - 3 * DAY_MS, state.clock.ms - 7 * DAY_MS);
   const log = since(state, fromMs);
   const s = state.supplies;
   const traits = p.identity.traits;
@@ -101,7 +123,11 @@ export function gatherFacts(state: SimState): LetterFacts {
   return {
     mood,
     need,
-    poorly: p.health < 70,
+    poorly: p.health < 70 && !p.sick,
+    sick: p.sick,
+    away: away
+      ? { duration: durationPhrase(away.durationMs), knocks: log.knocks ?? 0, slept: (log.activities.sleep ?? 0) > 0 && p.needs.energy > 60 }
+      : null,
     did,
     events,
     games,
@@ -127,8 +153,8 @@ function gamesLine(log: DayLog): LetterFacts['games'] {
 }
 
 /** Writes a letter from the current state, files it, and returns it. */
-export function writeLetter(state: SimState): Letter {
-  const facts = gatherFacts(state);
+export function writeLetter(state: SimState, away?: AwayNote): Letter {
+  const facts = gatherFacts(state, away);
   const recentTexts = new Set(state.letters.slice(-UNIQUE_WITHIN).map((l) => l.text));
   let text = '';
   let used: string[] = [];
@@ -172,15 +198,22 @@ function compose(state: SimState, facts: LetterFacts, used: string[], ignoreRece
   const paragraphs: string[] = [line('greeting')];
 
   const feeling: string[] = [];
-  if (maybe(0.5)) feeling.push(line('opening'));
+  if (facts.away) {
+    feeling.push(line('away.opening', { duration: facts.away.duration }));
+    if (facts.away.slept) feeling.push(line('away.slept'));
+  } else if (maybe(0.5)) {
+    feeling.push(line('opening'));
+  }
   feeling.push(line(`feeling.${facts.mood}`));
   if (facts.need) feeling.push(line(`need.${facts.need}`));
-  if (facts.poorly) feeling.push(line('health.poorly'));
+  if (facts.sick) feeling.push(line('health.sick'));
+  else if (facts.poorly) feeling.push(line('health.poorly'));
   paragraphs.push(feeling.join(' '));
 
   const news: string[] = [];
+  if (facts.away && facts.away.knocks > 0) news.push(line('away.knocked', { count: countPhrase(facts.away.knocks) }));
   if (facts.did.length === 0 && facts.events.length === 0 && !facts.games) {
-    news.push(line('did.quiet'));
+    news.push(line(facts.away ? 'away.quiet' : 'did.quiet'));
   } else {
     if (facts.did.length > 0 && maybe(0.4)) news.push(line('did.intro'));
     for (const [id, n] of facts.did) news.push(line(`did.${id}`, { count: countPhrase(n) }));

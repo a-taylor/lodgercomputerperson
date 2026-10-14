@@ -17,6 +17,8 @@ export interface DayLog {
   games: { kind: GameKind; winner: Winner }[];
   /** Supplies that ran out. */
   ranOut: string[];
+  /** Times he knocked on the glass. Optional: older saves don't have it. */
+  knocks?: number;
   moodSum: number;
   moodSamples: number;
 }
@@ -25,7 +27,7 @@ export interface DayLog {
 const KEEP_DAYS = 8;
 
 export function emptyDay(day: number): DayLog {
-  return { day, activities: {}, deliveries: {}, records: [], pats: 0, polite: 0, rude: 0, refusals: 0, games: [], ranOut: [], moodSum: 0, moodSamples: 0 };
+  return { day, activities: {}, deliveries: {}, records: [], pats: 0, polite: 0, rude: 0, refusals: 0, games: [], ranOut: [], knocks: 0, moodSum: 0, moodSamples: 0 };
 }
 
 /** Today's log, starting a new one (and forgetting old ones) when the day turns. */
@@ -56,6 +58,7 @@ export function since(state: SimState, fromMs: number): DayLog {
     total.refusals += d.refusals;
     total.games.push(...d.games);
     total.ranOut.push(...d.ranOut);
+    total.knocks = (total.knocks ?? 0) + (d.knocks ?? 0);
     total.moodSum += d.moodSum;
     total.moodSamples += d.moodSamples;
   }

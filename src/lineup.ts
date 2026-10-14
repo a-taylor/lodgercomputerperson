@@ -33,6 +33,8 @@ function frame(): void {
       asleep: false,
       carrying: false,
       humming: person.quirks.includes('hummer'),
+      sick: i === seeds.length - 1 && seeds.length > 1,
+      mood: i % 3 === 0 ? 20 : i % 3 === 1 ? 55 : 85,
       tick,
     });
     drawDog(ctx, dog, x + 18, 40, -1, false, true, tick);

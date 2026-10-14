@@ -447,5 +447,25 @@
   "game.abandon": [
     "Sorry, I have to stop. Let's finish later.",
     "Hold that thought, I need a break."
+  ],
+  "knock.sick": [
+    "I don't feel very well, {player}.",
+    "I'm poorly. Could you look after me?",
+    "I feel awful. Please help."
+  ],
+  "knock.dying": [
+    "Please... I need food and water.",
+    "{player}, I'm really ill. Please help me.",
+    "I can't go on like this much longer."
+  ],
+  "welcome": [
+    "You're back!",
+    "There you are, {player}!",
+    "I missed you!",
+    "Oh, hello again!"
+  ],
+  "welcome.sick": [
+    "You're back... I'm not well.",
+    "Thank goodness you're here."
   ]
 }

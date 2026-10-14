@@ -3,40 +3,72 @@ import { drawDog, drawFigure } from './render/sprites';
 import { GAME_NAMES, type GameKind } from './sim/games';
 import type { DeliveryItem } from './sim/interactions';
 import { NEED_IDS } from './sim/needs';
-import { createSim, currentStep, DAY_MS, HOUR_MS, isAsleep, step, TICK_MS, timeScaleOf, type Command } from './sim/sim';
+import { catchUp, type AwaySummary } from './sim/away';
+import { makeMemorial, type MemorialEntry } from './sim/memorial';
+import { createSim, currentStep, DAY_MS, HOUR_MS, isAsleep, step, TICK_MS, timeScaleOf, type Command, type SimState } from './sim/sim';
 import { defaultWorld } from './sim/world';
+import { readSave, writeSave } from './storage/idb';
+import { makeSave, parseSave, SaveError, type SaveFile } from './storage/save';
+import { h } from './ui/dom';
 import { renderGame } from './ui/gamePanel';
 
 const world = defaultWorld();
 const { house } = world;
 const params = new URLSearchParams(location.search);
 
-// Each new home gets its own tenant. Until saving arrives (phase 6) the seed lives in the URL,
-// so reloading brings back the same person rather than a stranger.
-let seed = Math.trunc(Number(params.get('seed')));
-if (!Number.isFinite(seed) || seed === 0) {
-  seed = (crypto.getRandomValues(new Uint32Array(1))[0]! % 999_999) + 1;
-  params.set('seed', String(seed));
-  history.replaceState(null, '', `?${params}`);
-}
 // His day runs 30x faster than real time by default (a day lasts 48 minutes). The speed slider
 // changes it while playing; ?speed= sets where it starts and is kept in step with the slider.
 const SPEEDS = [1, 2, 5, 10, 20, 30, 60, 120, 300, 600];
 const DEFAULT_SPEED = 30;
 const speedParam = Math.round(Number(params.get('speed')));
-const timeScale = nearestSpeed(Number.isFinite(speedParam) && speedParam >= 1 ? speedParam : DEFAULT_SPEED);
 
 function nearestSpeed(n: number): number {
   return SPEEDS.reduce((best, s) => (Math.abs(Math.log(s / n)) < Math.abs(Math.log(best / n)) ? s : best));
 }
-// The clock starts at the player's local time.
-const now = new Date();
-const sim = createSim(world, seed, {
-  startMinute: now.getHours() * 60 + now.getMinutes(),
-  timeScale,
-  startEmpty: !params.has('movedIn'),
-  emptyTicks: params.has('quick') ? 60 : undefined,
-});
+
+function randomSeed(): number {
+  return (crypto.getRandomValues(new Uint32Array(1))[0]! % 999_999) + 1;
+}
+
+/** A brand-new home: an empty house, with a stranger due any minute. */
+function newHome(seed: number, scale: number): SimState {
+  const now = new Date();
+  return createSim(world, seed, {
+    startMinute: now.getHours() * 60 + now.getMinutes(),
+    timeScale: scale,
+    startEmpty: !params.has('movedIn'),
+    emptyTicks: params.has('quick') ? 60 : undefined,
+  });
+}
+
+// Load the saved home if there is one (?fresh ignores it and starts again). A save that can't be
+// read is left alone: this session won't autosave over it.
+let saving = true;
+let saveNotice = '';
+let loaded: SaveFile | null = null;
+if (!params.has('fresh')) {
+  const raw = await readSave();
+  if (raw !== null) {
+    try {
+      loaded = parseSave(raw, world);
+    } catch (err) {
+      saving = false;
+      saveNotice = `Couldn't read your saved game (${err instanceof SaveError ? err.message : 'unknown error'}). Not saving, so it isn't overwritten.`;
+    }
+  }
+}
+
+const memorial: MemorialEntry[] = loaded?.memorial ?? [];
+const sim: SimState = loaded
+  ? loaded.state
+  : newHome(Math.trunc(Number(params.get('seed'))) || randomSeed(), nearestSpeed(speedParam >= 1 ? speedParam : DEFAULT_SPEED));
+const seed = sim.seed;
+// Time passes while you're away, at his real pace. Under a minute isn't worth catching up.
+const MIN_AWAY_MS = 60_000;
+let away: AwaySummary | null = null;
+if (loaded && Date.now() - loaded.lastSeen > MIN_AWAY_MS) away = catchUp(sim, world, Date.now() - loaded.lastSeen);
+const timeScale = nearestSpeed(speedParam >= 1 ? speedParam : timeScaleOf(sim));
+if (timeScale !== timeScaleOf(sim)) step(sim, world, [{ type: 'setSpeed', timeScale }]);
 
 const $ = <T extends HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
 const canvas = $<HTMLCanvasElement>('#house');
@@ -169,13 +201,14 @@ function updateGame(): void {
 // Letters: newest first when opened, with older and newer to page through.
 let letterIndex = -1;
 
-function openLetters(): void {
+function openLetters(atId?: number): void {
   if (sim.letters.length === 0) {
     letterHeading.textContent = 'No letters yet';
     letterText.textContent = `${sim.person.identity.name} hasn't written to you yet. Give him a day or two, or ask him to write.`;
   }
   const firstUnread = sim.letters.findIndex((l) => !l.read);
-  letterIndex = firstUnread >= 0 ? firstUnread : sim.letters.length - 1;
+  const at = atId === undefined ? -1 : sim.letters.findIndex((l) => l.id === atId);
+  letterIndex = at >= 0 ? at : firstUnread >= 0 ? firstUnread : sim.letters.length - 1;
   showLetter();
   if (!letterDialog.open) letterDialog.showModal();
 }
@@ -191,7 +224,7 @@ function showLetter(): void {
   if (!letter.read) pending.push({ type: 'readLetter', id: letter.id });
 }
 
-lettersButton.addEventListener('click', openLetters);
+lettersButton.addEventListener('click', () => openLetters());
 $<HTMLButtonElement>('#letter-prev').addEventListener('click', () => (letterIndex--, showLetter()));
 $<HTMLButtonElement>('#letter-next').addEventListener('click', () => (letterIndex++, showLetter()));
 $<HTMLButtonElement>('#letter-close').addEventListener('click', () => letterDialog.close());
@@ -295,8 +328,9 @@ function showIntro(): void {
   playerInput.focus();
 }
 
-let lastSpeechSeq = 0;
-let lastKnockSeq = 0;
+// Start from what was saved, so a loaded game doesn't replay an old knock or line.
+let lastSpeechSeq = sim.speech?.seq ?? 0;
+let lastKnockSeq = sim.knock?.seq ?? 0;
 let captionUntil = 0;
 
 function updateOverlays(px: number, py: number): void {
@@ -357,10 +391,133 @@ function updateControls(): void {
   if (suppliesLine.textContent !== text) suppliesLine.textContent = text;
 }
 
+// Saving: autosave every few seconds and whenever the tab is hidden. Hidden counts as away:
+// coming back catches up, just like reopening the tab.
+const saveStatus = $<HTMLParagraphElement>('#save-status');
+const farewell = $<HTMLElement>('#farewell');
+const farewellText = $<HTMLParagraphElement>('#farewell-text');
+const memorialDialog = $<HTMLDialogElement>('#memorial-dialog');
+const memorialList = $<HTMLDivElement>('#memorial-list');
+const importFile = $<HTMLInputElement>('#import-file');
+
+function showSaveStatus(): void {
+  saveStatus.textContent =
+    saveNotice || (saving ? 'Saved automatically in this browser. Time passes for him while you are away.' : 'Saving is off in this browser.');
+}
+showSaveStatus();
+
+async function save(): Promise<void> {
+  if (!saving) return;
+  if (!(await writeSave(makeSave(sim, memorial, Date.now())))) {
+    saving = false;
+    saveNotice = "This browser won't let the game save (private window?). He'll be forgotten when you close the tab.";
+    showSaveStatus();
+  }
+}
+setInterval(save, 15_000);
+addEventListener('pagehide', () => void save());
+
+let hiddenAt: number | null = null;
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    hiddenAt = Date.now();
+    void save();
+    return;
+  }
+  if (hiddenAt !== null && Date.now() - hiddenAt > MIN_AWAY_MS) welcomeBack(catchUp(sim, world, Date.now() - hiddenAt));
+  hiddenAt = null;
+  last = performance.now();
+  acc = 0;
+});
+
+/** After an absence: no replaying knocks that happened to an empty room, and the letter is waiting. */
+function welcomeBack(summary: AwaySummary): void {
+  lastKnockSeq = sim.knock?.seq ?? 0;
+  prev.x = sim.person.x;
+  prev.y = sim.person.y;
+  prev.dx = sim.dog.x;
+  prev.dy = sim.dog.y;
+  if (summary.letter) openLetters(summary.letter.id);
+  void save();
+}
+
+function daysPhrase(days: number): string {
+  return days < 1 ? 'less than a day' : days === 1 ? 'a day' : `${days} days`;
+}
+
+// When he dies: a farewell, a place in the memorial, and a new tenant if you want one.
+function updateFarewell(): void {
+  const dead = !sim.person.alive;
+  farewell.hidden = !dead;
+  if (!dead) return;
+  const days = Math.max(0, Math.floor((sim.clock.ms - (sim.settledMs ?? sim.clock.ms)) / DAY_MS));
+  const text = `${sim.person.identity.name} has died. He lived here for ${daysPhrase(days)}, with ${sim.dog.identity.name}.`;
+  if (farewellText.textContent !== text) farewellText.textContent = text;
+}
+
+$<HTMLButtonElement>('#new-tenant').addEventListener('click', async () => {
+  memorial.push(makeMemorial(sim, Date.now()));
+  const next = newHome(randomSeed(), timeScaleOf(sim));
+  saving = false; // stop the old tenant being written back over the new one
+  await writeSave(makeSave(next, memorial, Date.now()));
+  location.href = location.pathname;
+});
+
+function openMemorial(): void {
+  // The current tenant, if he has died, is remembered here too before you move someone new in.
+  const entries = sim.person.alive ? memorial : [...memorial, makeMemorial(sim, Date.now())];
+  memorialList.replaceChildren(
+    ...(entries.length === 0
+      ? [h('p', {}, 'Nobody has died here. Long may it last.')]
+      : [...entries].reverse().map((e) =>
+          h(
+            'article',
+            {},
+            h('h3', {}, `${e.name} and ${e.dogName}`),
+            h(
+              'p',
+              {},
+              `Lived here ${daysPhrase(e.daysLived)} · ${e.letters} letter${e.letters === 1 ? '' : 's'} · died ${new Date(e.diedAt).toLocaleDateString()}`,
+            ),
+            e.lastLetter ? h('details', {}, h('summary', {}, 'His last letter'), h('pre', {}, e.lastLetter)) : null,
+          ),
+        )),
+  );
+  memorialDialog.showModal();
+}
+for (const button of document.querySelectorAll<HTMLButtonElement>('.open-memorial')) button.addEventListener('click', openMemorial);
+$<HTMLButtonElement>('#memorial-close').addEventListener('click', () => memorialDialog.close());
+
+// Export and import: the save as a small JSON file.
+$<HTMLButtonElement>('#export-save').addEventListener('click', () => {
+  const file = makeSave(sim, memorial, Date.now());
+  const blob = new Blob([JSON.stringify(file, null, 1)], { type: 'application/json' });
+  const a = h('a', { href: URL.createObjectURL(blob), download: `lodger-${sim.person.identity.name.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.json` });
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+$<HTMLButtonElement>('#import-save').addEventListener('click', () => importFile.click());
+importFile.addEventListener('change', async () => {
+  const chosen = importFile.files?.[0];
+  importFile.value = '';
+  if (!chosen) return;
+  try {
+    const file = parseSave(await chosen.text(), world);
+    const who = file.state.person.identity.name;
+    if (!confirm(`Replace ${sim.person.identity.name} with ${who} from this file? ${sim.person.identity.name} will be gone unless you've exported him.`)) return;
+    saving = false;
+    await writeSave(file);
+    location.href = location.pathname;
+  } catch (err) {
+    alert(err instanceof SaveError ? err.message : "Couldn't read that file.");
+  }
+});
+
 // Fixed-timestep loop: the sim only ever advances in whole ticks; rendering interpolates.
 let last = performance.now();
 let acc = 0;
 const prev = { x: sim.person.x, y: sim.person.y, dx: sim.dog.x, dy: sim.dog.y };
+if (away) welcomeBack(away);
 
 function frame(now: number): void {
   acc += Math.min(now - last, 1000);
@@ -394,12 +551,15 @@ function frame(now: number): void {
       asleep: isAsleep(sim, world),
       carrying: p.carrying,
       humming: p.identity.quirks.includes('hummer'),
+      sick: p.sick,
+      mood: p.mood,
       tick: sim.tick,
     });
   }
   updateOverlays(px, py);
   updateControls();
   updateGame();
+  updateFarewell();
 
   if (sim.playerName !== null && !intro.hidden) intro.hidden = true;
   if (movedIn() && sim.playerName === null && !introDismissed && intro.hidden && sim.knock) showIntro();
