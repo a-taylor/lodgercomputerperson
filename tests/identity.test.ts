@@ -63,15 +63,18 @@ describe('seeded identity', () => {
 
   it('gives visibly different people and dogs', () => {
     const looks = new Set<string>();
-    const dogs = new Set<string>();
+    const breeds = [0, 0, 0, 0];
+    const dogNames = new Set<string>();
     for (let seed = 1; seed <= 200; seed++) {
       const { person, dog } = generateIdentity(seed);
       looks.add(JSON.stringify(person.look));
-      dogs.add(JSON.stringify(dog));
+      breeds[dog.breed]!++;
+      dogNames.add(dog.name);
     }
     expect(looks.size).toBeGreaterThanOrEqual(198);
-    // Dogs have a smaller space (about 2,500 equally likely combinations), so a few repeats in 200 are expected.
-    expect(dogs.size).toBeGreaterThanOrEqual(185);
+    // The dog's look comes from a pack of four dogs: all four turn up, in roughly even shares.
+    for (const n of breeds) expect(n).toBeGreaterThan(30);
+    expect(dogNames.size).toBeGreaterThan(30);
 
     const a = generateIdentity(1);
     const b = generateIdentity(2);

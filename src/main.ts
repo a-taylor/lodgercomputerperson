@@ -1,5 +1,7 @@
 import { drawFront, drawHouse, loadArt } from './render/canvas';
-import { drawDog, drawFigure, drawOutlined } from './render/sprites';
+import { drawDogSprite, loadDogSheets } from './render/dogArt';
+import { drawFigure, drawOutlined, type FigurePose } from './render/sprites';
+import { drawTenantSprite, loadTenantSheet } from './render/tenantArt';
 import { GAME_NAMES, type GameKind } from './sim/games';
 import type { DeliveryItem } from './sim/interactions';
 import { NEED_IDS } from './sim/needs';
@@ -103,27 +105,50 @@ let introDismissed = false;
 let scale = 1;
 const pending: Command[] = [];
 const art = await loadArt();
+const dogSheets = await loadDogSheets();
+const tenantSheet = await loadTenantSheet();
+// Trial: the tenant from Penzilla's character sheet; ?figure=code shows the old code-drawn one.
+const packFigure = params.get('figure') !== 'code';
+// Trial: ?tenantScale=1.5 or 2 to see him bigger.
+const tenantScale = Number(params.get('tenantScale')) || 1;
 // ?debug exposes the running game to the console, for poking at it while developing.
 if (params.has('debug')) Object.assign(window, { lcp: { sim, world } });
 
-// ?zoom=4&x=120&y=80 shows a close-up of part of the house, for checking pixels (dev).
+// The house fills its area. Whole-number scales keep pixels perfectly even, so use one when it
+// fills most of the space; otherwise scale in between (at 3x and up the unevenness is hard to see).
+// ?zoom=4&x=120&y=80 shows a close-up of part of the house instead, for checking pixels (dev).
 const zoom = Number(params.get('zoom')) || 0;
+const frameBox = $<HTMLDivElement>('#frame');
 function fitCanvas(): void {
   if (zoom) {
     scale = zoom;
     stage.style.overflow = 'hidden';
-    stage.style.width = `${Math.min(innerWidth - 32, width * zoom)}px`;
-    stage.style.height = `${Math.min(innerHeight - 220, height * zoom)}px`;
+    stage.style.width = `${Math.min(frameBox.clientWidth, width * zoom)}px`;
+    stage.style.height = `${Math.min(Math.max(frameBox.clientHeight, 300), height * zoom)}px`;
     canvas.style.marginLeft = `${-(Number(params.get('x')) || 0) * zoom}px`;
     canvas.style.marginTop = `${-(Number(params.get('y')) || 0) * zoom}px`;
   } else {
-    scale = Math.max(1, Math.floor(Math.min((innerWidth - 32) / width, (innerHeight - 260) / height)));
+    // On a narrow screen the frame is as tall as we make it, so fit by width alone.
+    const stacked = getComputedStyle(frameBox).flexGrow === '0';
+    const fit = Math.min(frameBox.clientWidth / width, stacked ? Infinity : frameBox.clientHeight / height);
+    const whole = Math.floor(fit);
+    scale = Math.max(1, whole >= 1 && whole >= fit * 0.85 ? whole : fit);
   }
-  canvas.style.width = `${width * scale}px`;
-  canvas.style.height = `${height * scale}px`;
+  canvas.style.width = `${Math.floor(width * scale)}px`;
+  canvas.style.height = `${Math.floor(height * scale)}px`;
 }
-addEventListener('resize', fitCanvas);
+new ResizeObserver(fitCanvas).observe(frameBox);
 fitCanvas();
+
+const fullscreenButton = $<HTMLButtonElement>('#fullscreen');
+function toggleFullscreen(): void {
+  if (document.fullscreenElement) void document.exitFullscreen();
+  else void document.documentElement.requestFullscreen?.();
+}
+fullscreenButton.addEventListener('click', toggleFullscreen);
+document.addEventListener('fullscreenchange', () => {
+  fullscreenButton.setAttribute('aria-label', document.fullscreenElement ? 'Leave full screen' : 'Full screen');
+});
 
 const movedIn = () => sim.moveIn.stage === 'done';
 
@@ -165,6 +190,9 @@ addEventListener('keydown', (e) => {
   } else if (e.code === 'KeyL') {
     e.preventDefault();
     openLetters();
+  } else if (e.code === 'Enter') {
+    e.preventDefault();
+    toggleFullscreen();
   } else if (e.code === 'KeyN') {
     e.preventDefault();
     debug.hidden = !debug.hidden;
@@ -552,20 +580,25 @@ function frame(now: number): void {
 
   ctx.imageSmoothingEnabled = false;
   drawHouse(ctx, house, art, (sim.clock.ms % DAY_MS) / HOUR_MS, sim.tick, showGraph);
-  // The tenant and the dog get the art pack's dark outline, so they sit in the same world.
+  // The dog comes already outlined from its pack; the tenant gets the outline added.
   if (dog.present) {
-    drawOutlined(ctx, lerp(prev.dx, dog.x), lerp(prev.dy, dog.y), (c, x, y) =>
-      drawDog(c, dog.identity, x, y, dog.facing, dog.path.length > 0, dog.food > 50, sim.tick),
-    );
+    drawDogSprite(ctx, dogSheets, dog.identity.breed, {
+      x: lerp(prev.dx, dog.x),
+      y: lerp(prev.dy, dog.y),
+      facing: dog.facing,
+      walking: dog.path.length > 0,
+      stillTicks: dog.stillTicks,
+      tick: sim.tick,
+    });
   }
   if (p.present && p.alive) {
     const pose = p.activity?.doing ? (currentStep(sim, world)?.pose ?? 'stand') : 'stand';
     const using = house.def.furniture.find((f) => f.use === p.at);
     // Sitting in the bath: lower him in, then draw the tub's front over him.
     const inside = pose === 'sit' && p.path.length === 0 && using?.sitIn ? using : null;
-    drawOutlined(ctx, px, py - (inside?.sitIn!.seatHeight ?? 0), (c, x, y) => drawFigure(c, p.identity.look, {
-      x,
-      y,
+    const figure: FigurePose = {
+      x: px,
+      y: py - (inside?.sitIn!.seatHeight ?? 0),
       facing: p.facing,
       walking: p.path.length > 0,
       pose,
@@ -577,7 +610,9 @@ function frame(now: number): void {
       sick: p.sick,
       mood: p.mood,
       tick: sim.tick,
-    }));
+    };
+    if (packFigure) drawTenantSprite(ctx, tenantSheet, p.identity.look, figure, tenantScale);
+    else drawOutlined(ctx, figure.x, figure.y, (c, x, y) => drawFigure(c, p.identity.look, { ...figure, x, y }));
     if (inside) drawFront(ctx, house, art, inside);
   }
   updateOverlays(px, py);

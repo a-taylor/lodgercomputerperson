@@ -1,6 +1,6 @@
 // Placeholder sprites for the person and the dog, drawn from their seeded identities.
 import type { Pose } from '../sim/activities';
-import type { DogIdentity, Look } from '../sim/identity';
+import type { Look } from '../sim/identity';
 
 export interface FigurePose {
   x: number;
@@ -170,10 +170,10 @@ export function drawFigure(ctx: CanvasRenderingContext2D, look: Look, pose: Figu
 }
 
 // Tiny pixel glyphs, drawn as pixels rather than font text so they stay crisp (and outline cleanly).
-const Z = ['xxx', '..x', '.x.', 'x..', 'xxx'];
-const NOTE = ['..xx', '..x.', '..x.', 'xxx.', 'xx..'];
+export const Z = ['xxx', '..x', '.x.', 'x..', 'xxx'];
+export const NOTE = ['..xx', '..x.', '..x.', 'xxx.', 'xx..'];
 
-function glyph(ctx: CanvasRenderingContext2D, rows: string[], x: number, y: number): void {
+export function glyph(ctx: CanvasRenderingContext2D, rows: string[], x: number, y: number): void {
   ctx.fillStyle = '#ffffff';
   rows.forEach((row, j) => [...row].forEach((ch, i) => ch === 'x' && ctx.fillRect(x + i, y + j, 1, 1)));
 }
@@ -204,56 +204,4 @@ function drawHair(ctx: CanvasRenderingContext2D, look: Look, x: number, top: num
       for (let i = -2; i <= 2; i += 2) ctx.fillRect(x + i, top - 1, 1, 1);
       return;
   }
-}
-
-const DOG_SIZE = { small: { w: 7, h: 3, head: 3 }, medium: { w: 9, h: 4, head: 4 }, large: { w: 12, h: 5, head: 5 } };
-
-/** Dog with paws at (x, y). Lies down when still, wags when fed. */
-export function drawDog(
-  ctx: CanvasRenderingContext2D,
-  dog: DogIdentity,
-  x: number,
-  y: number,
-  facing: -1 | 1,
-  walking: boolean,
-  wellFed: boolean,
-  tick: number,
-): void {
-  const s = DOG_SIZE[dog.size];
-  const left = Math.round(x - s.w / 2);
-  const legs = walking ? 2 : 0;
-  const bodyTop = Math.round(y) - legs - s.h;
-  const headX = facing === 1 ? left + s.w - 1 : left - s.head + 1;
-
-  ctx.fillStyle = dog.coat;
-  ctx.fillRect(left, bodyTop, s.w, s.h);
-  if (walking) {
-    const step = Math.floor(tick / 3) % 2;
-    ctx.fillRect(left + step, bodyTop + s.h, 1, legs);
-    ctx.fillRect(left + s.w - 2 + step, bodyTop + s.h, 1, legs);
-  }
-  ctx.fillRect(headX, bodyTop - s.head + 2, s.head, s.head);
-  if (dog.spots) {
-    ctx.fillStyle = dog.coat === '#2a2420' ? '#e8dcc4' : '#2a2420';
-    ctx.fillRect(left + 2, bodyTop + 1, 2, 1);
-    ctx.fillRect(left + s.w - 4, bodyTop, 1, 2);
-  }
-  ctx.fillStyle = shade(dog.coat);
-  const earX = facing === 1 ? headX : headX + s.head - 1;
-  if (dog.ears === 'pointy') ctx.fillRect(earX, bodyTop - s.head + 1, 1, 2);
-  else ctx.fillRect(earX, bodyTop - s.head + 2, 1, 3);
-  ctx.fillStyle = '#000';
-  ctx.fillRect(facing === 1 ? headX + s.head - 2 : headX + 1, bodyTop - s.head + 3, 1, 1);
-
-  const wag = wellFed && Math.floor(tick / 6) % 2 === 0 ? -1 : 0;
-  ctx.fillStyle = dog.coat;
-  ctx.fillRect(facing === 1 ? left - 2 : left + s.w, bodyTop + wag, 2, 1);
-}
-
-function shade(hex: string): string {
-  const n = parseInt(hex.slice(1), 16);
-  const r = Math.round(((n >> 16) & 255) * 0.65);
-  const g = Math.round(((n >> 8) & 255) * 0.65);
-  const b = Math.round((n & 255) * 0.65);
-  return `rgb(${r},${g},${b})`;
 }

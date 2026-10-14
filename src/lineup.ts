@@ -1,5 +1,6 @@
 // Dev page: seeded tenants side by side, to eyeball that seeds look different.
-import { drawDog, drawFigure } from './render/sprites';
+import { drawDogSprite, loadDogSheets } from './render/dogArt';
+import { drawFigure } from './render/sprites';
 import { generateIdentity } from './sim/identity';
 
 const SCALE = 5;
@@ -14,6 +15,7 @@ canvas.style.width = `${canvas.width * SCALE}px`;
 canvas.style.height = `${canvas.height * SCALE}px`;
 canvas.style.maxWidth = '100%';
 const ctx = canvas.getContext('2d')!;
+const dogSheets = await loadDogSheets();
 
 let tick = 0;
 function frame(): void {
@@ -37,7 +39,7 @@ function frame(): void {
       mood: i % 3 === 0 ? 20 : i % 3 === 1 ? 55 : 85,
       tick,
     });
-    drawDog(ctx, dog, x + 18, 40, -1, false, true, tick);
+    drawDogSprite(ctx, dogSheets, dog.breed, { x: x + 22, y: 40, facing: -1, walking: false, stillTicks: 0, tick });
     ctx.fillStyle = '#222';
     ctx.font = '5px monospace';
     ctx.fillText(person.name, i * CELL + 3, 48);

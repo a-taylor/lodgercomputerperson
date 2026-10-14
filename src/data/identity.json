@@ -350,22 +350,10 @@
     "#6b5b3e",
     "#1f3b2c"
   ],
-  "dogCoats": [
-    "#a0703c",
-    "#2a2420",
-    "#e8dcc4",
-    "#7a5230",
-    "#b5b0a8",
-    "#d0a060"
-  ],
   "dogSizes": [
     "small",
     "medium",
     "large"
-  ],
-  "dogEars": [
-    "floppy",
-    "pointy"
   ],
   "music": [
     "jazz",

@@ -47,11 +47,14 @@ export interface Identity {
 
 export interface DogIdentity {
   name: string;
-  coat: string;
+  /** Sets how fast it trots about. */
   size: DogSize;
-  ears: 'floppy' | 'pointy';
-  spots: boolean;
+  /** Which of the four NVPH dog sprite sheets, 0-3. */
+  breed: number;
 }
+
+/** How many dogs the NVPH sprite pack has. */
+export const DOG_BREEDS = 4;
 
 export type TraitId = keyof Traits;
 export const TRAIT_IDS: readonly TraitId[] = ['musical', 'bookish', 'telly', 'tidy', 'sociable'];
@@ -65,9 +68,7 @@ const data = identityJson as {
   facialHair: FacialHair[];
   shirts: string[];
   trousers: string[];
-  dogCoats: string[];
   dogSizes: DogSize[];
-  dogEars: ('floppy' | 'pointy')[];
   music: string[];
   foods: string[];
   quirks: Quirk[];
@@ -115,14 +116,15 @@ export function generateIdentity(seed: number): { person: Identity; dog: DogIden
     favouriteMusic: pick(rng, data.music),
     favouriteFood: pick(rng, data.foods),
   };
-  const dog: DogIdentity = {
-    name: pick(rng, data.dogNames),
-    coat: pick(rng, data.dogCoats),
-    size: pick(rng, data.dogSizes),
-    ears: pick(rng, data.dogEars),
-    spots: nextFloat(rng) < 0.3,
-  };
+  const name = pick(rng, data.dogNames);
+  // Three draws that once picked the old drawn dog's coat, ears and spots. Still taken from the
+  // stream so every trait drawn after them stays the same for existing seeds.
+  nextFloat(rng);
+  const size = pick(rng, data.dogSizes);
+  nextFloat(rng);
+  nextFloat(rng);
   person.traits.sociable = trait(rng);
+  const dog: DogIdentity = { name, size, breed: nextInt(rng, 0, DOG_BREEDS - 1) };
   return { person, dog };
 }
 

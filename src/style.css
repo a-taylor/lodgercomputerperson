@@ -14,15 +14,62 @@ body {
   color: var(--fg);
   font: 14px/1.4 system-ui, sans-serif;
 }
-main {
-  min-height: 100%;
+/* The house gets the window; everything else sits in a side panel (underneath on narrow screens). */
+#layout {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+}
+#view {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 16px;
+  gap: 6px;
+  min-width: 0;
 }
+#frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  /* On narrow screens the house is sized by width; this keeps it from collapsing before the first fit. */
+  min-height: 240px;
+}
+#under { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 18px; }
+#panel {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  min-width: 0;
+}
+#panel > * { margin: 0; }
+@media (min-width: 900px) and (min-aspect-ratio: 5/4) {
+  #layout { flex-direction: row; overflow: hidden; }
+  #view { flex: 1; height: 100%; }
+  #frame { flex: 1; min-height: 0; }
+  #panel { width: 320px; flex: none; height: 100%; overflow-y: auto; padding-right: 4px; }
+}
+#help { font-size: 12px; color: var(--muted); text-align: center; }
+#help summary, #more summary { cursor: pointer; color: var(--muted); }
+#help p { margin: 6px 0; }
+#fullscreen {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 2px 7px;
+  font: 16px/1.2 system-ui, sans-serif;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0.6;
+}
+#fullscreen:hover, #fullscreen:focus-visible { opacity: 1; }
+:fullscreen #layout { padding: 8px; }
 canvas {
   display: block;
   image-rendering: pixelated;
@@ -77,7 +124,8 @@ canvas {
   pointer-events: none;
 }
 #talk, #actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 100%; }
-#talk input { width: min(420px, 70vw); }
+#talk { flex-wrap: nowrap; }
+#talk input { flex: 1; min-width: 0; }
 #talk input, #talk button, #actions button { font: inherit; padding: 4px 10px; }
 #supplies { margin: 0; color: var(--muted); font-size: 13px; text-align: center; }
 .visually-hidden {
@@ -112,7 +160,7 @@ canvas {
 #invite { padding: 6px 12px; border: 2px solid var(--fg); border-radius: 8px; }
 #invite button, #game-picker button, #game button, #game input, dialog button { font: inherit; padding: 4px 10px; }
 #game {
-  width: min(560px, 100%);
+  width: 100%;
   padding: 10px 14px;
   border: 1px solid var(--muted);
   border-radius: 8px;
@@ -166,7 +214,7 @@ dialog h2 { margin: 0 0 8px; font-size: 15px; color: var(--muted); font-weight: 
 #speed output { min-width: 15ch; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 #farewell {
-  width: min(560px, 100%);
+  width: 100%;
   padding: 12px 16px;
   border: 2px solid var(--fg);
   border-radius: 8px;
@@ -176,7 +224,7 @@ dialog h2 { margin: 0 0 8px; font-size: 15px; color: var(--muted); font-weight: 
 #farewell p { margin: 0 0 8px; }
 #farewell .row, #more .row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
 #farewell button, #more button { font: inherit; padding: 4px 10px; }
-#more { width: min(560px, 100%); font-size: 13px; }
+#more { font-size: 13px; }
 #more summary { cursor: pointer; color: var(--muted); text-align: center; }
 #more p { text-align: center; color: var(--muted); }
 #memorial-list article { margin: 0 0 12px; padding-bottom: 10px; border-bottom: 1px solid var(--muted); }

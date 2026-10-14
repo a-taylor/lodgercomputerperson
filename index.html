@@ -7,69 +7,113 @@
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
-    <main>
-      <div id="stage">
-        <canvas id="house" width="320" height="240" aria-label="Cutaway view of the house. Click him to pat him on the head."></canvas>
-        <div id="bubble" hidden></div>
-        <div id="caption" hidden aria-hidden="true"></div>
-      </div>
-      <p id="status" role="status" aria-live="polite"></p>
-      <div id="speed">
-        <label for="speed-input">Speed</label>
-        <input id="speed-input" type="range" min="0" step="1" aria-describedby="speed-output" />
-        <output id="speed-output" for="speed-input"></output>
-      </div>
-      <div id="speech-log" class="visually-hidden" aria-live="polite"></div>
-
-      <form id="intro" hidden>
-        <p id="intro-text"></p>
-        <label>What's your name? <input id="player-name" autocomplete="given-name" maxlength="20" required /></label>
-        <label>Call him something else? <input id="tenant-name" maxlength="20" /></label>
-        <button type="submit">Say hello</button>
-      </form>
-
-      <section id="farewell" hidden aria-labelledby="farewell-text">
-        <p id="farewell-text"></p>
-        <div class="row">
-          <button type="button" id="new-tenant">Welcome a new tenant</button>
-          <button type="button" class="open-memorial">Remember him</button>
+    <main id="layout">
+      <section id="view" aria-label="The house">
+        <div id="frame">
+          <div id="stage">
+            <canvas id="house" width="320" height="240" aria-label="Cutaway view of the house. Click him to pat him on the head."></canvas>
+            <div id="bubble" hidden></div>
+            <div id="caption" hidden aria-hidden="true"></div>
+            <button type="button" id="fullscreen" aria-label="Full screen" title="Full screen (Alt+Enter)">⛶</button>
+          </div>
         </div>
+        <div id="under">
+          <p id="status" role="status" aria-live="polite"></p>
+          <div id="speed">
+            <label for="speed-input">Speed</label>
+            <input id="speed-input" type="range" min="0" step="1" aria-describedby="speed-output" />
+            <output id="speed-output" for="speed-input"></output>
+          </div>
+        </div>
+        <div id="speech-log" class="visually-hidden" aria-live="polite"></div>
       </section>
 
-      <div id="invite" hidden role="alert">
-        <span id="invite-text"></span>
-        <button type="button" data-answer="yes">Yes, let's play</button>
-        <button type="button" data-answer="no">Not now</button>
-      </div>
+      <aside id="panel" aria-label="Talk to him and look after him">
+        <form id="intro" hidden>
+          <p id="intro-text"></p>
+          <label>What's your name? <input id="player-name" autocomplete="given-name" maxlength="20" required /></label>
+          <label>Call him something else? <input id="tenant-name" maxlength="20" /></label>
+          <button type="submit">Say hello</button>
+        </form>
 
-      <section id="game" hidden aria-label="Game" aria-live="polite"></section>
+        <section id="farewell" hidden aria-labelledby="farewell-text">
+          <p id="farewell-text"></p>
+          <div class="row">
+            <button type="button" id="new-tenant">Welcome a new tenant</button>
+            <button type="button" class="open-memorial">Remember him</button>
+          </div>
+        </section>
 
-      <form id="talk">
-        <label for="talk-input" class="visually-hidden">Say something to him</label>
-        <input id="talk-input" maxlength="120" autocomplete="off" placeholder="Say something… e.g. “please play the piano”" />
-        <button type="submit">Say</button>
-      </form>
+        <div id="invite" hidden role="alert">
+          <span id="invite-text"></span>
+          <button type="button" data-answer="yes">Yes, let's play</button>
+          <button type="button" data-answer="no">Not now</button>
+        </div>
 
-      <div id="actions" role="toolbar" aria-label="Things you can do">
-        <button data-command="deliver:food" title="Alt+F">Food</button>
-        <button data-command="deliver:water" title="Alt+W">Water</button>
-        <button data-command="deliver:dogFood" title="Alt+D">Dog food</button>
-        <button data-command="deliver:record" title="Alt+R">Record</button>
-        <button data-command="deliver:book" title="Alt+B">Book</button>
-        <button data-command="pat" title="Alt+T, or click him">Pat</button>
-        <button data-command="phone" title="Alt+P">Phone</button>
-        <button data-command="alarm" title="Alt+A">Alarm</button>
-        <button id="games-button" type="button" aria-expanded="false" title="Alt+C">Games…</button>
-        <button id="letters-button" type="button" title="Alt+L">Letters</button>
-      </div>
-      <div id="game-picker" hidden role="group" aria-label="Pick a game">
-        <button data-game="war">War</button>
-        <button data-game="poker">Poker</button>
-        <button data-game="anagrams">Anagrams</button>
-        <button data-game="wordPuzzle">Guess My Word</button>
-        <button data-game="">His choice</button>
-      </div>
-      <p id="supplies"></p>
+        <section id="game" hidden aria-label="Game" aria-live="polite"></section>
+
+        <form id="talk">
+          <label for="talk-input" class="visually-hidden">Say something to him</label>
+          <input id="talk-input" maxlength="120" autocomplete="off" placeholder="Say something… e.g. “please play the piano”" />
+          <button type="submit">Say</button>
+        </form>
+
+        <div id="actions" role="toolbar" aria-label="Things you can do">
+          <button data-command="deliver:food" title="Alt+F">Food</button>
+          <button data-command="deliver:water" title="Alt+W">Water</button>
+          <button data-command="deliver:dogFood" title="Alt+D">Dog food</button>
+          <button data-command="deliver:record" title="Alt+R">Record</button>
+          <button data-command="deliver:book" title="Alt+B">Book</button>
+          <button data-command="pat" title="Alt+T, or click him">Pat</button>
+          <button data-command="phone" title="Alt+P">Phone</button>
+          <button data-command="alarm" title="Alt+A">Alarm</button>
+          <button id="games-button" type="button" aria-expanded="false" title="Alt+C">Games…</button>
+          <button id="letters-button" type="button" title="Alt+L">Letters</button>
+        </div>
+        <div id="game-picker" hidden role="group" aria-label="Pick a game">
+          <button data-game="war">War</button>
+          <button data-game="poker">Poker</button>
+          <button data-game="anagrams">Anagrams</button>
+          <button data-game="wordPuzzle">Guess My Word</button>
+          <button data-game="">His choice</button>
+        </div>
+        <p id="supplies"></p>
+
+        <details id="more">
+          <summary>Saving &amp; more</summary>
+          <p id="save-status"></p>
+          <div class="row">
+            <button type="button" id="export-save">Export save</button>
+            <button type="button" id="import-save">Import save…</button>
+            <input type="file" id="import-file" accept="application/json,.json" hidden />
+            <button type="button" class="open-memorial">Memorial</button>
+          </div>
+          <p class="credits">
+            Graphics created by Penzilla Design (<a href="https://penzilla.itch.io/house-interior">house interior</a>,
+            <a href="https://penzilla.itch.io/protagonist-character">Free Protagonist</a>).
+            Dog sprites by NVPH Studio (<a href="https://nvph-studio.itch.io/dog-animation-4-different-dogs">Dog Animation</a>,
+            <a href="https://creativecommons.org/licenses/by-nd/4.0/">CC BY-ND 4.0</a>, unmodified).
+            Extra furniture is original.
+          </p>
+        </details>
+
+        <details id="help">
+          <summary>Shortcuts &amp; options</summary>
+          <p>
+            <kbd>Alt</kbd>+<kbd>F</kbd> food, <kbd>W</kbd> water, <kbd>D</kbd> dog food, <kbd>R</kbd> record, <kbd>B</kbd> book,
+            <kbd>T</kbd> pat, <kbd>P</kbd> phone, <kbd>A</kbd> alarm, <kbd>C</kbd> games, <kbd>L</kbd> letters,
+            <kbd>Enter</kbd> full screen. <kbd>Alt</kbd>+<kbd>N</kbd> needs panel, <kbd>Alt</kbd>+<kbd>G</kbd> floor graph.
+          </p>
+          <p>
+            URL: <code>?seed=123</code>, <code>?speed=1</code> (starting speed; default 30), <code>?quick</code>, <code>?movedIn</code>,
+            <code>?fresh</code> (ignore the save and start again; it will be overwritten).
+            Dev: <code>?zoom=4&amp;x=0&amp;y=0</code> close-up, <code>?debug</code> exposes <code>lcp</code> in the console,
+            <code>?figure=code</code> the old tenant, <code>?tenantScale=1.5</code>.
+          </p>
+        </details>
+
+        <pre id="debug" hidden></pre>
+      </aside>
 
       <dialog id="letter-dialog" aria-labelledby="letter-heading">
         <h2 id="letter-heading"></h2>
@@ -81,30 +125,11 @@
         </div>
       </dialog>
 
-      <details id="more">
-        <summary>Saving &amp; more</summary>
-        <p id="save-status"></p>
-        <div class="row">
-          <button type="button" id="export-save">Export save</button>
-          <button type="button" id="import-save">Import save…</button>
-          <input type="file" id="import-file" accept="application/json,.json" hidden />
-          <button type="button" class="open-memorial">Memorial</button>
-        </div>
-        <p class="credits">Graphics created by Penzilla Design (<a href="https://penzilla.itch.io/house-interior">house interior pack</a>). Extra furniture, the tenant and the dog are original.</p>
-      </details>
-
       <dialog id="memorial-dialog" aria-labelledby="memorial-heading">
         <h2 id="memorial-heading">In memory</h2>
         <div id="memorial-list"></div>
         <div class="row"><button type="button" id="memorial-close">Close</button></div>
       </dialog>
-
-      <pre id="debug" hidden></pre>
-      <p class="hint">
-        Shortcuts: <kbd>Alt</kbd>+<kbd>F</kbd> food, <kbd>W</kbd> water, <kbd>D</kbd> dog food, <kbd>R</kbd> record, <kbd>B</kbd> book,
-        <kbd>T</kbd> pat, <kbd>P</kbd> phone, <kbd>A</kbd> alarm, <kbd>C</kbd> games, <kbd>L</kbd> letters. <kbd>Alt</kbd>+<kbd>N</kbd> needs panel, <kbd>Alt</kbd>+<kbd>G</kbd> floor graph.
-        URL: <code>?seed=123</code>, <code>?speed=1</code> (starting speed; default 30), <code>?quick</code>, <code>?movedIn</code>, <code>?fresh</code> (ignore the save and start again; it will be overwritten). Dev: <code>?zoom=4&amp;x=0&amp;y=0</code> close-up, <code>?debug</code> exposes <code>lcp</code> in the console.
-      </p>
     </main>
     <script type="module" src="/src/main.ts"></script>
   </body>
