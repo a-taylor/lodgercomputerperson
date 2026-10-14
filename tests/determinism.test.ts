@@ -49,7 +49,7 @@ describe('seeded simulation', () => {
     const sim = createSim(world, 1985);
     run(sim, world, TICKS);
     // If this changes, sim behaviour changed. Update it deliberately, not casually.
-    expect(hashState(sim)).toMatchInlineSnapshot(`"b75886d6"`);
+    expect(hashState(sim)).toMatchInlineSnapshot(`"e3b53a63"`);
   });
 
   it('resumes identically from a JSON round-trip of its state', () => {

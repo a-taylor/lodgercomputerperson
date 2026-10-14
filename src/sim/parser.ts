@@ -1,6 +1,7 @@
 // Typed input to an intent. Normalise, fold phrases and synonyms into canonical words, forgive
 // small typos, then match the first intent whose keyword groups are all present.
 import lexiconJson from '../data/lexicon.json';
+import type { GameKind } from './games/types';
 
 export type IntentId =
   | 'name'
@@ -22,6 +23,8 @@ export type IntentId =
   | 'goTo'
   | 'tvWatch'
   | 'playWhat'
+  | 'yes'
+  | 'no'
   | 'greet'
   | 'thanks';
 
@@ -35,6 +38,8 @@ export interface Parsed {
   politeness: Politeness;
   room?: string;
   name?: string;
+  /** Which game, if they named one. */
+  game?: GameKind;
   /** Canonical tokens, for debugging and tests. */
   tokens: string[];
 }
@@ -120,6 +125,10 @@ export function parse(raw: string, ctx: ParseContext = {}): Parsed {
     if (!matched) continue;
     const parsed: Parsed = { intent: def.id, activity: def.activity ?? null, politeness, tokens };
     if (def.id === 'goTo') parsed.room = room;
+    if (def.id === 'game') {
+      const game = whichGame(raw);
+      if (game) parsed.game = game;
+    }
     if (def.id === 'name') {
       const name = extractName(raw);
       if (!name) continue;
@@ -174,6 +183,15 @@ export function editDistance(a: string, b: string, cap = Infinity): number {
     if (rowMin > cap) return cap + 1;
   }
   return d[a.length]![b.length]!;
+}
+
+function whichGame(raw: string): GameKind | undefined {
+  const t = raw.toLowerCase();
+  if (/poker/.test(t)) return 'poker';
+  if (/\bwar\b/.test(t)) return 'war';
+  if (/anagram/.test(t)) return 'anagrams';
+  if (/word game|puzzle|guess (the|my|your|a) word|hangman/.test(t)) return 'wordPuzzle';
+  return undefined;
 }
 
 function extractName(raw: string): string | null {

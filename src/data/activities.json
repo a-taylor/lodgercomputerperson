@@ -76,7 +76,8 @@
       "consumes": "food",
       "requires": [
         "food"
-      ]
+      ],
+      "noun": "food"
     },
     {
       "id": "drink",
@@ -100,7 +101,8 @@
       "consumes": "water",
       "requires": [
         "water"
-      ]
+      ],
+      "noun": "water"
     },
     {
       "id": "sleep",
@@ -161,7 +163,8 @@
             "toHour": 21
           }
         }
-      ]
+      ],
+      "noun": "sleep"
     },
     {
       "id": "wash",
@@ -206,7 +209,8 @@
             "hygiene": 220
           }
         }
-      ]
+      ],
+      "noun": "bath"
     },
     {
       "id": "tv",
@@ -239,7 +243,8 @@
             "energy": -2
           }
         }
-      ]
+      ],
+      "noun": "TV"
     },
     {
       "id": "read",
@@ -279,7 +284,8 @@
             "fun": 40
           }
         }
-      ]
+      ],
+      "noun": "book"
     },
     {
       "id": "piano",
@@ -311,7 +317,8 @@
             "fun": 70
           }
         }
-      ]
+      ],
+      "noun": "piano"
     },
     {
       "id": "feedDog",
@@ -355,7 +362,8 @@
       "consumes": "dogFood",
       "requires": [
         "dogFood"
-      ]
+      ],
+      "noun": "dog"
     },
     {
       "id": "music",
@@ -397,7 +405,8 @@
             "fun": 55
           }
         }
-      ]
+      ],
+      "noun": "record"
     },
     {
       "id": "dance",
@@ -440,7 +449,8 @@
             "energy": -15
           }
         }
-      ]
+      ],
+      "noun": "dancing"
     },
     {
       "id": "exercise",
@@ -473,7 +483,8 @@
             "hygiene": -15
           }
         }
-      ]
+      ],
+      "noun": "exercise"
     },
     {
       "id": "phone",
@@ -496,7 +507,8 @@
             "fun": 80
           }
         }
-      ]
+      ],
+      "noun": "phone"
     },
     {
       "id": "knock",
@@ -520,7 +532,61 @@
           "label": "knocking on the glass",
           "pose": "knock"
         }
-      ]
+      ],
+      "noun": "knocking"
+    },
+    {
+      "id": "letter",
+      "label": "writing a letter",
+      "kind": "social",
+      "adverts": {},
+      "hours": [
+        [
+          22,
+          8,
+          0
+        ]
+      ],
+      "steps": [
+        {
+          "node": "study.typewriter",
+          "minutes": [
+            10,
+            20
+          ],
+          "label": "typing a letter",
+          "pose": "sit",
+          "rates": {
+            "fun": 20
+          }
+        }
+      ],
+      "noun": "letter-writing"
+    },
+    {
+      "id": "game",
+      "label": "playing a game with you",
+      "kind": "social",
+      "trait": "sociable",
+      "autonomous": false,
+      "adverts": {
+        "fun": 40
+      },
+      "steps": [
+        {
+          "node": "study.games",
+          "minutes": [
+            600,
+            600
+          ],
+          "label": "playing a game with you",
+          "pose": "sit",
+          "rates": {
+            "fun": 40
+          }
+        }
+      ],
+      "noun": "games"
     },
     {
       "id": "potter",
@@ -537,7 +603,8 @@
           ],
           "label": "pottering about"
         }
-      ]
+      ],
+      "noun": "pottering"
     }
   ]
 }

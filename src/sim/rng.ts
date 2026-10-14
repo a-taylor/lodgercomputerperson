@@ -26,3 +26,13 @@ export function pick<T>(rng: Rng, items: readonly T[]): T {
   if (items.length === 0) throw new Error('pick from empty list');
   return items[nextInt(rng, 0, items.length - 1)]!;
 }
+
+/** A shuffled copy (Fisher-Yates). */
+export function shuffle<T>(rng: Rng, items: readonly T[]): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = nextInt(rng, 0, i);
+    [out[i], out[j]] = [out[j]!, out[i]!];
+  }
+  return out;
+}

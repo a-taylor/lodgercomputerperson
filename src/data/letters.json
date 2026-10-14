@@ -1,0 +1,304 @@
+{
+  "greeting": [
+    "Dear {player},",
+    "Hello {player}!",
+    "Hi {player},",
+    "Dearest {player},",
+    "To {player}, out there,",
+    "{player}!",
+    "Greetings, {player}.",
+    "Hello again, {player},",
+    "Dear friend,",
+    "Ahoy, {player}!"
+  ],
+  "opening": [
+    "I thought I'd write.",
+    "It's been a while since my last letter.",
+    "I've got a few things to tell you.",
+    "Here I am at the typewriter again.",
+    "The typewriter's working, so here goes.",
+    "Just a quick note.",
+    "I hope this finds you well.",
+    "{dog} is watching me type this."
+  ],
+  "feeling.great": [
+    "I'm feeling wonderful at the moment.",
+    "Life in this house is pretty good, I must say.",
+    "I've been in a terrific mood.",
+    "Honestly, I couldn't be happier.",
+    "Things are going swimmingly.",
+    "I woke up smiling today."
+  ],
+  "feeling.good": [
+    "I'm doing well. You were going to ask, weren't you?",
+    "Things are pretty good here.",
+    "I'm in good spirits.",
+    "All's well in the house.",
+    "I've been fairly cheerful lately.",
+    "I'm content, mostly."
+  ],
+  "feeling.ok": [
+    "I'm doing alright, I suppose.",
+    "Things are so-so.",
+    "I'm getting by.",
+    "Not bad, not great.",
+    "Some days are better than others.",
+    "I'm fine. Just fine."
+  ],
+  "feeling.low": [
+    "I've been feeling a bit down.",
+    "To be honest, I'm not very happy.",
+    "Things have been rather gloomy.",
+    "I've been moping about, if I'm honest.",
+    "I'm a bit fed up."
+  ],
+  "feeling.awful": [
+    "I'm miserable, {player}.",
+    "Things are really bad here.",
+    "I don't think I've ever felt this low.",
+    "I'm not doing well at all."
+  ],
+  "need.food": [
+    "I'm terribly hungry most of the time.",
+    "My stomach keeps rumbling.",
+    "I could really do with a proper meal."
+  ],
+  "need.water": [
+    "I'm so thirsty.",
+    "I keep wishing for a glass of water."
+  ],
+  "need.energy": [
+    "I'm worn out.",
+    "I can hardly keep my eyes open as I type this."
+  ],
+  "need.hygiene": [
+    "I'm rather in need of a bath.",
+    "I'm starting to smell a bit, sorry."
+  ],
+  "need.fun": [
+    "I'm bored stiff.",
+    "There's not much to do around here lately."
+  ],
+  "health.poorly": [
+    "I've been feeling poorly.",
+    "I think I'm coming down with something.",
+    "I'm not well, {player}."
+  ],
+  "did.intro": [
+    "Here's what I've been up to.",
+    "Let me tell you about my days.",
+    "Since my last letter:",
+    "You might like to know what I've been doing.",
+    "News from the house:"
+  ],
+  "did.piano": [
+    "I played the piano {count}.",
+    "My fingers have been busy on the piano, {count} in all.",
+    "I've practised piano {count}. I'm getting better!",
+    "The piano and I have been getting along: {count}."
+  ],
+  "did.music": [
+    "I listened to my records {count}.",
+    "The record player got a lot of use, {count}.",
+    "I put a record on {count}."
+  ],
+  "did.tv": [
+    "I watched TV {count}.",
+    "I've watched rather a lot of television, {count}.",
+    "The telly was on {count}."
+  ],
+  "did.read": [
+    "I sat down to read {count}.",
+    "I've had my nose in a book {count}.",
+    "I curled up with a book {count}."
+  ],
+  "did.dance": [
+    "I danced {count}! Nobody saw. Well, you might have.",
+    "I had a little dance {count}."
+  ],
+  "did.exercise": [
+    "I did my exercises {count}.",
+    "I've been keeping fit: {count} on the rug."
+  ],
+  "did.wash": [
+    "I had a bath {count}.",
+    "I've kept myself clean, {count} in the bath."
+  ],
+  "did.phone": [
+    "I chatted on the phone {count}.",
+    "I answered the phone {count}."
+  ],
+  "did.feedDog": [
+    "I fed {dog} {count}.",
+    "{dog} got fed {count} and says thank you."
+  ],
+  "did.game": [
+    "We played games {count}.",
+    "I got the games out {count}."
+  ],
+  "did.quiet": [
+    "I haven't done much at all.",
+    "It's been very quiet.",
+    "Mostly I've just pottered about."
+  ],
+  "event.record": [
+    "Thank you for the {genre} record!",
+    "The new {genre} record is lovely.",
+    "I keep playing that {genre} record you sent."
+  ],
+  "event.recordFavourite": [
+    "You sent me {genre}, my favourite! Thank you!",
+    "That {genre} record made my week."
+  ],
+  "event.book": [
+    "Thanks for the book. I'm enjoying it.",
+    "The new book is a real page-turner.",
+    "I started the book you sent and I can't put it down."
+  ],
+  "event.food": [
+    "Thanks for keeping the fridge full.",
+    "The groceries were very welcome.",
+    "Thank you for the food deliveries."
+  ],
+  "event.pats": [
+    "I liked the pats on the head.",
+    "Thank you for all the head pats. They make my day.",
+    "The pats on the head were nice."
+  ],
+  "games.won": [
+    "I beat you at {game}! Sorry. Not sorry.",
+    "I won our game of {game}. Rematch?",
+    "Remember when I won at {game}? I do."
+  ],
+  "games.lost": [
+    "You beat me at {game}. Well played.",
+    "I lost at {game}, but it was fun.",
+    "You won at {game}. I'll get you next time."
+  ],
+  "games.mixed": [
+    "We played {count}: I won {wins} and you won {losses}.",
+    "Our games were close. {wins} to me, {losses} to you."
+  ],
+  "games.alwaysYou": [
+    "You always win when we play. It's not much fun for me, you know.",
+    "You've won every single game. Do you practise?",
+    "I never win against you. Not once."
+  ],
+  "want.record": [
+    "I'd love a new record, if you see one.",
+    "A new record would be lovely. {genre}, perhaps?",
+    "I've worn out my records."
+  ],
+  "want.book": [
+    "I've read all my books. Could you send another?",
+    "I'd love something new to read."
+  ],
+  "want.food": [
+    "We're nearly out of food.",
+    "Could you send some food? The fridge is looking empty."
+  ],
+  "want.water": [
+    "We're running low on water.",
+    "Please send water when you can."
+  ],
+  "want.dogFood": [
+    "{dog} needs more food.",
+    "We're almost out of dog food."
+  ],
+  "want.company": [
+    "I'd like it if you visited more often.",
+    "It gets lonely here without you.",
+    "Do knock on the glass sometime. Or I will."
+  ],
+  "want.game": [
+    "Would you play a game with me soon?",
+    "I'm itching for a game of {game}.",
+    "How about a game of {game} one of these days?"
+  ],
+  "review.great": [
+    "You're a wonderful friend, {player}.",
+    "I couldn't ask for a better person out there.",
+    "You look after me so well."
+  ],
+  "review.good": [
+    "You're good to me, {player}.",
+    "Thanks for looking after me.",
+    "You're doing a fine job."
+  ],
+  "review.mixed": [
+    "You're alright, mostly.",
+    "Some days I wonder if you've forgotten me.",
+    "You could look in on me a bit more."
+  ],
+  "review.poor": [
+    "I feel a bit forgotten, {player}.",
+    "Do you even think about me?",
+    "I wish you'd look after me better."
+  ],
+  "review.neglect": [
+    "We ran out of {item} and nobody came.",
+    "I had to go without {item} for a while.",
+    "The {item} ran out. I did knock."
+  ],
+  "review.rude": [
+    "You've been a bit rude lately. A please wouldn't hurt.",
+    "I don't like being bossed about, you know.",
+    "Manners cost nothing, {player}."
+  ],
+  "review.polite": [
+    "Thank you for always asking so nicely.",
+    "You've got lovely manners.",
+    "I like how polite you are."
+  ],
+  "signoff": [
+    "Your friend,\n{name}",
+    "Love,\n{name}",
+    "All the best,\n{name}",
+    "Yours truly,\n{name}",
+    "Cheerio,\n{name}",
+    "Warmly,\n{name}",
+    "See you soon,\n{name}",
+    "Your lodger,\n{name}",
+    "Fondly,\n{name}",
+    "Until next time,\n{name}"
+  ],
+  "ps.dog": [
+    "P.S. {dog} says woof.",
+    "P.S. {dog} chewed my slipper again.",
+    "P.S. {dog} has been sleeping on my bed. Don't tell anyone.",
+    "P.S. {dog} sends a lick.",
+    "P.S. {dog} chased its tail for ten minutes this morning."
+  ],
+  "ps.food": [
+    "P.S. I dream about {food}.",
+    "P.S. If you ever have any {food}, think of me."
+  ],
+  "ps.music": [
+    "P.S. Have you ever listened to {genre}? You should.",
+    "P.S. I've been humming {genre} tunes all day."
+  ],
+  "ps.quirk.windowGazer": [
+    "P.S. The view from the study window is lovely at sunset.",
+    "P.S. I counted eleven birds from the window today."
+  ],
+  "ps.quirk.nightSnacker": [
+    "P.S. Don't ask what I was doing in the kitchen at three in the morning.",
+    "P.S. Midnight snacks are the best snacks."
+  ],
+  "ps.quirk.fidget": [
+    "P.S. I can't sit still today.",
+    "P.S. I've reorganised the bookshelf twice."
+  ],
+  "ps.quirk.hummer": [
+    "P.S. I've had a song stuck in my head for days. La la la.",
+    "P.S. Hum hum hum."
+  ],
+  "ps.quirk.dogLover": [
+    "P.S. Did I mention how much I love {dog}?",
+    "P.S. {dog} is the best dog in the world. Fact."
+  ],
+  "ps.typo": [
+    "P.S. Sorry about any typos. This typewriter has a mind of its own.",
+    "P.S. The letter E sticks. Sorry."
+  ]
+}

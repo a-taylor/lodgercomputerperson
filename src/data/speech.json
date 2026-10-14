@@ -336,14 +336,6 @@
     "{player}! What a lovely name.",
     "Hello, {player}. I'm {name}."
   ],
-  "notYet.letter": [
-    "My typewriter ribbon's dried up. Maybe soon.",
-    "I'm not much of a letter writer yet."
-  ],
-  "notYet.game": [
-    "I don't know any games yet.",
-    "I'll have to learn some games first."
-  ],
   "confused": [
     "Hmm?",
     "Sorry, I didn't catch that.",
@@ -354,5 +346,106 @@
   "playWhat": [
     "Play what?",
     "Play what, the piano?"
+  ],
+  "comply.letter": [
+    "I'll write you something.",
+    "Let me find some paper.",
+    "A letter? Coming right up."
+  ],
+  "comply.game": [
+    "Let's play {game}!",
+    "Ooh, {game}. You're on.",
+    "Get ready to lose at {game}!"
+  ],
+  "letter.done": [
+    "I've written you a letter!",
+    "There's a letter for you, {player}.",
+    "Check your post! I wrote you a letter."
+  ],
+  "invite.no": [
+    "Oh. Okay then.",
+    "Maybe another time.",
+    "Fine. I'll play with {dog}."
+  ],
+  "knock.game": [
+    "Fancy a game of {game}?",
+    "Want to play {game}?",
+    "I'm bored. {game}?"
+  ],
+  "game.war.tie": [
+    "War!",
+    "A tie! That means war.",
+    "Same card! War!"
+  ],
+  "game.war.bigWin": [
+    "Ha! I'll take that pile.",
+    "The war is mine!"
+  ],
+  "game.poker.drew": [
+    "I'll take {count}.",
+    "{count} cards for me, please."
+  ],
+  "game.poker.stand": [
+    "I'm happy with these.",
+    "I'll keep what I've got."
+  ],
+  "game.poker.reveal": [
+    "I've got {hand}.",
+    "{hand}! Beat that."
+  ],
+  "game.poker.fold": [
+    "Folding? I'll take the pot, then!",
+    "Ha! Scared of my hand?"
+  ],
+  "game.anagrams.youGot": [
+    "{word}! Well done.",
+    "Yes, it's {word}."
+  ],
+  "game.anagrams.wrong": [
+    "Nope, try again.",
+    "Not quite.",
+    "Close. Maybe."
+  ],
+  "game.anagrams.heGot": [
+    "It's {word}! I got it!",
+    "Easy, it's {word}."
+  ],
+  "game.anagrams.stumped": [
+    "Hmm, no idea. It was {word}.",
+    "Beats me too. It was {word}."
+  ],
+  "game.puzzle.youGot": [
+    "Yes! {word}!",
+    "You got it, it's {word}."
+  ],
+  "game.puzzle.reveal": [
+    "Ha! The word was {word}.",
+    "It was {word}! Got you."
+  ],
+  "game.heWon": [
+    "I win! I win!",
+    "Ha! Victory!",
+    "Yes! Another game?",
+    "I won! Did you see that?"
+  ],
+  "game.youWon": [
+    "Well played!",
+    "You got me.",
+    "Good game!",
+    "Fair and square."
+  ],
+  "game.youAlwaysWin": [
+    "You always win...",
+    "Not again!",
+    "Do you ever lose?",
+    "This isn't fun when I never win."
+  ],
+  "game.draw": [
+    "A draw! Fair enough.",
+    "Nobody wins. Everybody wins?"
+  ],
+  "game.abandon": [
+    "Sorry, I have to stop. Let's finish later.",
+    "Hold that thought, I need a break."
   ]
 }

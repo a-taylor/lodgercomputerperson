@@ -1,6 +1,7 @@
 // The simulation: plain JSON-safe state advanced in fixed ticks. No DOM, no clocks, no Math.random.
 import { hourWeight, inHours, type ActivityDef, type StepDef } from './activities';
 import { createDog, stepDog, BOWL, type DogState } from './dog';
+import { GAME_NAMES, type GameAction, type GameKind, type GameState, type Winner } from './games';
 import { cleanName, generateIdentity, traitAffinity, type Identity } from './identity';
 import {
   deliver,
@@ -14,6 +15,8 @@ import {
   type DeliveryItem,
   type KnockReason,
 } from './interactions';
+import type { Letter } from './letters';
+import { remember, type DayLog } from './memory';
 import { createMoveIn, DEFAULT_EMPTY_TICKS, FRONT_DOOR, movedIn, stepMoveIn, type MoveInState } from './moveIn';
 import { placeAt, routeFromHere, walk, type Mover } from './movement';
 import {
@@ -30,6 +33,7 @@ import {
   type NeedId,
   type Needs,
 } from './needs';
+import { abandonGame, answerInvite, finishLetter, gameMove, invite, letterWant } from './play';
 import { createRng, nextFloat, nextInt, pick, type Rng } from './rng';
 import { say, type SpeechLogEntry, type SpeechState } from './speech';
 import { hasRequirement, startingSupplies, type Supplies } from './supplies';
@@ -98,13 +102,27 @@ export interface SimState {
   knock: { seq: number; reason: KnockReason; tick: number } | null;
   lastKnockMs: number | null;
   /** Something he agreed to do once he's finished what he's doing. */
-  pending: { activity: string; node: string | null; untilMs: number } | null;
+  pending: { activity: string; node: string | null; game: GameKind | null; untilMs: number } | null;
   /** Game time the player last did anything. */
   lastInteractionMs: number | null;
   /** Game times of recent pats on the head. */
   pats: number[];
   /** The phone is ringing until this tick. */
   phoneRing: { untilTick: number } | null;
+  /** A day-by-day log of what happened, newest last. */
+  memory: DayLog[];
+  /** When he finished moving in (or the sim started, if he was already settled). */
+  settledMs: number | null;
+  letters: Letter[];
+  /** Sentences used in recent letters, so the next one says things differently. */
+  letterRecent: string[];
+  lastLetterMs: number | null;
+  /** The game in progress, or the last one until a new one starts. */
+  game: GameState | null;
+  /** He asked you to play and is waiting for an answer. */
+  invitation: { game: GameKind; untilMs: number } | null;
+  /** Recent game results, oldest first. */
+  gameResults: Winner[];
 }
 
 export type Command =
@@ -116,7 +134,14 @@ export type Command =
   | { type: 'deliver'; item: DeliveryItem }
   | { type: 'pat' }
   | { type: 'phone' }
-  | { type: 'alarm' };
+  | { type: 'alarm' }
+  /** A move in the current game. */
+  | { type: 'game'; action: GameAction }
+  /** You ask him to play (a particular game, or his choice). */
+  | { type: 'invite'; game?: GameKind }
+  /** Your answer when he asks you to play. */
+  | { type: 'answerInvite'; accept: boolean }
+  | { type: 'readLetter'; id: number };
 
 export interface SimOptions {
   /** Minute of day the clock starts at. Default 08:00. */
@@ -177,6 +202,14 @@ export function createSim(world: World, seed: number, options: SimOptions = {}):
     lastInteractionMs: null,
     pats: [],
     phoneRing: null,
+    memory: [],
+    settledMs: startEmpty ? null : Math.round(startMinute) * MINUTE_MS,
+    letters: [],
+    letterRecent: [],
+    lastLetterMs: null,
+    game: null,
+    invitation: null,
+    gameResults: [],
   };
 }
 
@@ -209,6 +242,7 @@ export function step(state: SimState, world: World, commands: readonly Command[]
   if (state.moveIn.stage !== 'done') {
     // Nothing the player does counts until he has moved in.
     stepMoveIn(state, world);
+    if (isSettled(state.moveIn)) state.settledMs = state.clock.ms;
   } else {
     for (const cmd of commands) applyCommand(state, world, cmd);
     if (p.alive) {
@@ -223,12 +257,19 @@ export function step(state: SimState, world: World, commands: readonly Command[]
   state.tick++;
 }
 
+/** Read through a function so TypeScript doesn't keep the narrowing from before stepMoveIn. */
+function isSettled(m: MoveInState): boolean {
+  return m.stage === 'done';
+}
+
 export function run(state: SimState, world: World, ticks: number): void {
   for (let i = 0; i < ticks; i++) step(state, world);
 }
 
 function applyCommand(state: SimState, world: World, cmd: Command): void {
   if (!state.person.alive && cmd.type !== 'introduce') return;
+  // Anything you do counts as company.
+  state.lastInteractionMs = state.clock.ms;
   switch (cmd.type) {
     case 'goTo':
       if (world.house.nodes.has(cmd.node)) startActivity(state, world, 'potter', cmd.node);
@@ -248,6 +289,20 @@ function applyCommand(state: SimState, world: World, cmd: Command): void {
     case 'alarm':
       soundAlarm(state, world);
       return;
+    case 'game':
+      gameMove(state, cmd.action);
+      return;
+    case 'invite':
+      requestGame(state, world, cmd.game);
+      return;
+    case 'answerInvite':
+      answerInvite(state, world, cmd.accept);
+      return;
+    case 'readLetter': {
+      const letter = state.letters.find((l) => l.id === cmd.id);
+      if (letter) letter.read = true;
+      return;
+    }
     case 'introduce': {
       const player = cmd.playerName === undefined ? null : cleanName(cmd.playerName);
       const tenant = cmd.tenantName === undefined ? null : cleanName(cmd.tenantName);
@@ -266,7 +321,7 @@ export function scoreActivities(state: SimState, world: World): { id: string; sc
   const want = wantsAttention(state);
   return world.activities.list.map((def) => {
     if (!isAvailable(state, def)) return { id: def.id, score: 0, offHours: true };
-    let score = def.id === 'knock' ? (want?.score ?? 0) : (def.base ?? 0);
+    let score = def.id === 'knock' ? (want?.score ?? 0) : def.id === 'letter' ? letterWant(state) : (def.base ?? 0);
     for (const [key, gain] of Object.entries(def.adverts) as [EffectKey, number][]) {
       score += (gain / 100) * urgency(effectValue(state, key));
     }
@@ -322,7 +377,12 @@ export function isAvailable(state: SimState, def: ActivityDef, requested = false
 export function startActivity(state: SimState, world: World, id: string, forcedNode?: string): void {
   const p = state.person;
   const def = world.activities.byId.get(id)!;
-  if (def.consumes) state.supplies[def.consumes] = Math.max(0, state.supplies[def.consumes] - 1);
+  if (p.activity?.id === 'game' && id !== 'game') abandonGame(state);
+  const used = def.consumes;
+  if (used) {
+    state.supplies[used] = Math.max(0, state.supplies[used] - 1);
+    if (state.supplies[used] === 0) remember(state, (log) => log.ranOut.includes(used) || log.ranOut.push(used));
+  }
   p.activity = { id, step: 0, node: '', doing: false, remainingMs: 0, startedMs: state.clock.ms };
   if (id === 'knock') p.activity.reason = wantsAttention(state)?.reason ?? 'lonely';
   beginWalkToStep(state, world, forcedNode);
@@ -332,6 +392,7 @@ export function startActivity(state: SimState, world: World, id: string, forcedN
 export function stopActivity(state: SimState, world: World, finished: boolean): void {
   const run = state.person.activity;
   if (!run) return;
+  if (run.id === 'game') abandonGame(state);
   if (finished) state.lastDone[run.id] = state.clock.ms;
   state.person.activity = null;
   state.person.path = [];
@@ -362,11 +423,13 @@ function resolveNode(state: SimState, world: World, node: string): string {
 function advanceActivity(state: SimState, world: World): void {
   const p = state.person;
   const run = p.activity!;
+  const def = world.activities.byId.get(run.id)!;
+  // A game lasts as long as the game does.
+  if (run.id === 'game' && (!state.game || state.game.over)) return finishActivity(state, world, def);
   if (p.path.length > 0) {
     walk(p, world.house, p.identity.pace);
     return;
   }
-  const def = world.activities.byId.get(run.id)!;
   const stepDef = def.steps[run.step]!;
   if (!run.doing) {
     run.doing = true;
@@ -400,14 +463,29 @@ function advanceActivity(state: SimState, world: World): void {
 function finishActivity(state: SimState, world: World, def: ActivityDef): void {
   state.lastDone[def.id] = state.clock.ms;
   state.person.activity = null;
+  const mood = state.person.mood;
+  remember(state, (log) => {
+    log.activities[def.id] = (log.activities[def.id] ?? 0) + 1;
+    log.moodSum += mood;
+    log.moodSamples++;
+  });
+  if (def.id === 'letter') finishLetter(state);
   takePending(state, world);
 }
 
 function knockOnGlass(state: SimState, reason: KnockReason): void {
   state.knock = { seq: (state.knock?.seq ?? 0) + 1, reason, tick: state.tick };
   state.lastKnockMs = state.clock.ms;
-  say(state, `knock.${reason}`);
+  if (reason === 'game') say(state, 'knock.game', { game: GAME_NAMES[invite(state)] });
+  else say(state, `knock.${reason}`);
 }
+
+/** You asked him to play. Goes through the same yes/no/later as any request. */
+function requestGame(state: SimState, world: World, game?: GameKind): void {
+  handleSay(state, world, game ? `let's play ${GAME_TEXT[game]}` : "let's play a game");
+}
+
+const GAME_TEXT: Record<GameKind, string> = { war: 'war', poker: 'poker', anagrams: 'anagrams', wordPuzzle: 'guess my word' };
 
 function updateBody(state: SimState, world: World): void {
   const p = state.person;
@@ -451,6 +529,7 @@ function checkInterrupts(state: SimState, world: World): void {
   const def = world.activities.byId.get(run.id)!;
   if (!mostCriticalNeed(state, world)) return;
   if (CRITICAL_NEEDS.some((id) => p.needs[id] < CRITICAL && serves(def, id))) return;
+  if (run.id === 'game') abandonGame(state);
   p.activity = null;
 }
 

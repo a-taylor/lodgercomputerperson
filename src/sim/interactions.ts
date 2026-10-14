@@ -2,9 +2,12 @@
 // He has a will: requests go through compliance, and a refusal always comes with a reason he says.
 import identityJson from '../data/identity.json';
 import type { ActivityDef } from './activities';
+import { GAME_NAMES, type GameKind } from './games';
+import { remember } from './memory';
 import { clampNeed } from './needs';
 import { parse, type Parsed, type Politeness } from './parser';
 import { nextFloat, pick } from './rng';
+import { answerInvite, startGame } from './play';
 import { say } from './speech';
 import { currentStep, isAvailable, isAsleep, startActivity, stopActivity, type SimState } from './sim';
 import { HOUR_MS, MINUTE_MS } from './time';
@@ -117,6 +120,7 @@ export function handleSay(state: SimState, world: World, text: string): Outcome 
     return parsed.activity ? { kind: 'refuse', reason: 'asleep' } : null;
   }
   if (parsed.politeness < 0) p.mood = clampNeed(p.mood - 3);
+  if (parsed.politeness !== 0) remember(state, (log) => (parsed.politeness > 0 ? log.polite++ : log.rude++));
 
   switch (parsed.intent) {
     case null:
@@ -138,12 +142,16 @@ export function handleSay(state: SimState, world: World, text: string): Outcome 
     case 'wake':
       say(state, 'alarm.awake');
       return null;
-    case 'letter':
-      say(state, 'notYet.letter');
+    case 'yes':
+    case 'no':
+      if (!answerInvite(state, world, parsed.intent === 'yes')) say(state, parsed.intent === 'yes' ? 'thanks' : 'confused');
       return null;
     case 'game':
-      say(state, 'notYet.game');
-      return null;
+      // Accepting his invitation by naming the game counts as a yes.
+      if (state.invitation && (!parsed.game || parsed.game === state.invitation.game) && answerInvite(state, world, true)) {
+        return { kind: 'comply' };
+      }
+      return request(state, world, 'game', parsed, undefined, parsed.game);
     case 'playWhat':
       say(state, 'playWhat');
       return null;
@@ -154,31 +162,41 @@ export function handleSay(state: SimState, world: World, text: string): Outcome 
   }
 }
 
-function request(state: SimState, world: World, activityId: string, parsed: Parsed, node?: string): Outcome {
+function request(state: SimState, world: World, activityId: string, parsed: Parsed, node?: string, game?: GameKind): Outcome {
   const p = state.person;
   const def = world.activities.byId.get(activityId)!;
+  if (activityId === 'game') game ??= state.game?.over === false ? state.game.kind : undefined;
   const a =
     activityId === 'potter'
       ? { chance: Math.min(1, 0.4 + (0.5 * p.mood) / 100 + 0.25 * parsed.politeness), hard: null, soft: null }
       : assessRequest(state, world, activityId, parsed.politeness);
-  const slots = { activity: def.label };
+  const slots: Record<string, string> = { activity: def.noun };
+  if (game) slots.game = GAME_NAMES[game];
 
   if (a.hard) {
     say(state, `refuse.${a.hard}`, slots);
+    remember(state, (log) => log.refusals++);
     return { kind: 'refuse', reason: a.hard };
   }
   if (nextFloat(state.rng) >= a.chance) {
     const reason: Refusal = a.soft ?? (parsed.politeness < 0 ? 'rude' : p.mood < 40 ? 'mood' : 'whim');
     say(state, `refuse.${reason}`, slots);
+    remember(state, (log) => log.refusals++);
     return { kind: 'refuse', reason };
   }
 
   if (parsed.politeness > 0) p.mood = clampNeed(p.mood + 2);
   const busyWith = busy(state, world);
   if (busyWith) {
-    state.pending = { activity: activityId, node: node ?? null, untilMs: state.clock.ms + DEFER_MS };
+    state.pending = { activity: activityId, node: node ?? null, game: game ?? null, untilMs: state.clock.ms + DEFER_MS };
     say(state, 'defer', { current: busyWith });
     return { kind: 'defer' };
+  }
+  if (activityId === 'game') {
+    const kind = game ?? undefined;
+    startGame(state, world, kind);
+    say(state, 'comply.game', { game: GAME_NAMES[state.game!.kind] });
+    return { kind: 'comply' };
   }
   const key = parsed.politeness > 0 && nextFloat(state.rng) < 0.35 ? 'comply.polite' : `comply.${activityId === 'potter' ? 'goTo' : activityId}`;
   say(state, key, slots);
@@ -203,7 +221,8 @@ export function takePending(state: SimState, world: World): boolean {
   const def = world.activities.byId.get(pending.activity)!;
   if (!isAvailable(state, def, true)) return false;
   say(state, 'deferDone');
-  startActivity(state, world, pending.activity, pending.node ?? undefined);
+  if (pending.activity === 'game') startGame(state, world, pending.game ?? undefined);
+  else startActivity(state, world, pending.activity, pending.node ?? undefined);
   return true;
 }
 
@@ -243,6 +262,7 @@ export function pat(state: SimState, world: World): void {
     say(state, 'pat.woken');
     return;
   }
+  remember(state, (log) => log.pats++);
   state.pats = state.pats.filter((ms) => state.clock.ms - ms < HOUR_MS);
   const recent = state.pats.length;
   state.pats.push(state.clock.ms);
@@ -257,10 +277,12 @@ export function deliver(state: SimState, world: World, item: DeliveryItem): void
   const s = state.supplies;
   const awake = !isAsleep(state, world);
   const speak = (key: string, slots?: Record<string, string>) => awake && say(state, key, slots);
+  remember(state, (log) => (log.deliveries[item] = (log.deliveries[item] ?? 0) + 1));
 
   if (item === 'record') {
     const genre = pick(state.rng, MUSIC);
     s.records.push(genre);
+    remember(state, (log) => log.records.push(genre));
     s.newRecordMs = state.clock.ms;
     const favourite = genre === p.identity.favouriteMusic;
     p.mood = clampNeed(p.mood + (favourite ? 9 : 4));
@@ -330,7 +352,7 @@ function touch(state: SimState): void {
   state.lastInteractionMs = state.clock.ms;
 }
 
-export type KnockReason = 'hello' | 'food' | 'water' | 'dogFood' | 'record' | 'lonely';
+export type KnockReason = 'hello' | 'food' | 'water' | 'dogFood' | 'record' | 'lonely' | 'game';
 
 /** Why he might knock on the glass right now, and how badly he wants to. */
 export function wantsAttention(state: SimState): { reason: KnockReason; score: number } | null {
@@ -349,8 +371,22 @@ export function wantsAttention(state: SimState): { reason: KnockReason; score: n
   if (since(state.lastInteractionMs) > lonelyAfter && since(state.lastKnockMs) > lonelyAfter) {
     wants.push(['lonely', 0.1 + 0.2 * p.identity.traits.sociable]);
   }
-  if (p.identity.traits.musical > 0.6 && since(s.newRecordMs) > 3 * 24 * HOUR_MS && since(state.lastKnockMs) > 24 * HOUR_MS) {
+  // The rest can wait: no point knocking for company while you're already here.
+  const together = since(state.lastInteractionMs) < HOUR_MS;
+  const sinceNewRecord = since(s.newRecordMs ?? state.settledMs);
+  if (!together && p.identity.traits.musical > 0.6 && sinceNewRecord > 3 * 24 * HOUR_MS && since(state.lastKnockMs) > 24 * HOUR_MS) {
     wants.push(['record', 0.12]);
+  }
+  const lastGame = state.lastDone.game;
+  if (
+    !together &&
+    p.identity.traits.sociable >= 0.4 &&
+    p.needs.fun < 60 &&
+    state.invitation === null &&
+    (lastGame === undefined || state.clock.ms - lastGame > 24 * HOUR_MS) &&
+    since(state.lastKnockMs) > 6 * HOUR_MS
+  ) {
+    wants.push(['game', 0.12 + 0.2 * p.identity.traits.sociable]);
   }
   if (wants.length === 0) return null;
   wants.sort((a, b) => b[1] - a[1]);

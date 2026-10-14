@@ -1,9 +1,11 @@
 import { drawHouse } from './render/canvas';
 import { drawDog, drawFigure } from './render/sprites';
+import { GAME_NAMES, type GameKind } from './sim/games';
 import type { DeliveryItem } from './sim/interactions';
 import { NEED_IDS } from './sim/needs';
 import { createSim, currentStep, DAY_MS, HOUR_MS, isAsleep, step, TICK_MS, type Command } from './sim/sim';
 import { defaultWorld } from './sim/world';
+import { renderGame } from './ui/gamePanel';
 
 const world = defaultWorld();
 const { house } = world;
@@ -46,6 +48,15 @@ const talk = $<HTMLFormElement>('#talk');
 const talkInput = $<HTMLInputElement>('#talk-input');
 const actions = $<HTMLDivElement>('#actions');
 const suppliesLine = $<HTMLParagraphElement>('#supplies');
+const inviteBar = $<HTMLDivElement>('#invite');
+const inviteText = $<HTMLSpanElement>('#invite-text');
+const gameSection = $<HTMLElement>('#game');
+const gamesButton = $<HTMLButtonElement>('#games-button');
+const gamePicker = $<HTMLDivElement>('#game-picker');
+const lettersButton = $<HTMLButtonElement>('#letters-button');
+const letterDialog = $<HTMLDialogElement>('#letter-dialog');
+const letterHeading = $<HTMLHeadingElement>('#letter-heading');
+const letterText = $<HTMLElement>('#letter-text');
 const ctx = canvas.getContext('2d')!;
 const { width, height } = house.def.size;
 
@@ -96,6 +107,12 @@ addEventListener('keydown', (e) => {
   if (spec) {
     e.preventDefault();
     send(commandFrom(spec));
+  } else if (e.code === 'KeyC') {
+    e.preventDefault();
+    toggleGamePicker();
+  } else if (e.code === 'KeyL') {
+    e.preventDefault();
+    openLetters();
   } else if (e.code === 'KeyN') {
     e.preventDefault();
     debug.hidden = !debug.hidden;
@@ -104,6 +121,74 @@ addEventListener('keydown', (e) => {
     showGraph = !showGraph;
   }
 });
+
+// Games: pick one to ask him, or answer when he asks you.
+function toggleGamePicker(): void {
+  gamePicker.hidden = !gamePicker.hidden;
+  gamesButton.setAttribute('aria-expanded', String(!gamePicker.hidden));
+}
+gamesButton.addEventListener('click', toggleGamePicker);
+gamePicker.addEventListener('click', (e) => {
+  const button = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-game]');
+  if (!button) return;
+  send({ type: 'invite', game: (button.dataset.game || undefined) as GameKind | undefined });
+  toggleGamePicker();
+});
+inviteBar.addEventListener('click', (e) => {
+  const button = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-answer]');
+  if (button) send({ type: 'answerInvite', accept: button.dataset.answer === 'yes' });
+});
+
+let shownGame: object | null = null;
+let shownVersion = -1;
+let closedGame: object | null = null;
+
+function updateGame(): void {
+  const g = sim.game;
+  const visible = g !== null && g !== closedGame;
+  gameSection.hidden = !visible;
+  if (!visible || (g === shownGame && g.version === shownVersion)) return;
+  shownGame = g;
+  shownVersion = g.version;
+  renderGame(gameSection, g, {
+    move: (action) => send({ type: 'game', action }),
+    close: () => {
+      closedGame = g;
+      gameSection.hidden = true;
+    },
+    himName: () => sim.person.identity.name,
+  });
+}
+
+// Letters: newest first when opened, with older and newer to page through.
+let letterIndex = -1;
+
+function openLetters(): void {
+  if (sim.letters.length === 0) {
+    letterHeading.textContent = 'No letters yet';
+    letterText.textContent = `${sim.person.identity.name} hasn't written to you yet. Give him a day or two, or ask him to write.`;
+  }
+  const firstUnread = sim.letters.findIndex((l) => !l.read);
+  letterIndex = firstUnread >= 0 ? firstUnread : sim.letters.length - 1;
+  showLetter();
+  if (!letterDialog.open) letterDialog.showModal();
+}
+
+function showLetter(): void {
+  const letter = sim.letters[letterIndex];
+  $<HTMLButtonElement>('#letter-prev').disabled = letterIndex <= 0;
+  $<HTMLButtonElement>('#letter-next').disabled = letterIndex >= sim.letters.length - 1;
+  if (!letter) return;
+  const day = Math.floor(letter.ms / DAY_MS) + 1;
+  letterHeading.textContent = `Letter ${letterIndex + 1} of ${sim.letters.length} · day ${day}, ${clockText(letter.ms)}`;
+  letterText.textContent = letter.text;
+  if (!letter.read) pending.push({ type: 'readLetter', id: letter.id });
+}
+
+lettersButton.addEventListener('click', openLetters);
+$<HTMLButtonElement>('#letter-prev').addEventListener('click', () => (letterIndex--, showLetter()));
+$<HTMLButtonElement>('#letter-next').addEventListener('click', () => (letterIndex++, showLetter()));
+$<HTMLButtonElement>('#letter-close').addEventListener('click', () => letterDialog.close());
 
 talk.addEventListener('submit', (e) => {
   e.preventDefault();
@@ -217,6 +302,21 @@ function updateControls(): void {
   for (const el of [...actions.querySelectorAll('button'), talkInput, talk.querySelector('button')!]) {
     (el as HTMLButtonElement | HTMLInputElement).disabled = !ready;
   }
+  gamesButton.disabled = !ready;
+  lettersButton.disabled = false;
+  const unread = sim.letters.filter((l) => !l.read).length;
+  const label = unread > 0 ? `Letters (${unread} new)` : 'Letters';
+  if (lettersButton.textContent !== label) lettersButton.textContent = label;
+  lettersButton.classList.toggle('unread', unread > 0);
+
+  const inv = sim.invitation;
+  const inviting = ready && inv !== null && inv.untilMs > sim.clock.ms && !isAsleep(sim, world);
+  inviteBar.hidden = !inviting;
+  if (inviting) {
+    const text = `${sim.person.identity.name} wants to play ${GAME_NAMES[inv.game]}.`;
+    if (inviteText.textContent !== text) inviteText.textContent = text;
+  }
+
   const s = sim.supplies;
   const text = `Fridge: ${s.food} meals, ${s.water} water · Dog food: ${s.dogFood} · ${s.records.length} record${s.records.length === 1 ? '' : 's'} · ${s.books} book${s.books === 1 ? '' : 's'}`;
   if (suppliesLine.textContent !== text) suppliesLine.textContent = text;
@@ -264,6 +364,7 @@ function frame(now: number): void {
   }
   updateOverlays(px, py);
   updateControls();
+  updateGame();
 
   if (sim.playerName !== null && !intro.hidden) intro.hidden = true;
   if (movedIn() && sim.playerName === null && !introDismissed && intro.hidden && sim.knock) showIntro();

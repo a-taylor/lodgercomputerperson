@@ -24,6 +24,8 @@ export interface StepDef {
 export interface ActivityDef {
   id: string;
   label: string;
+  /** A short name for it, for lines like "I'm not really a {activity} person". */
+  noun: string;
   kind?: 'need' | 'leisure' | 'idle' | 'social';
   /** False for things he only does when asked or prompted (answering the phone). Default true. */
   autonomous?: boolean;

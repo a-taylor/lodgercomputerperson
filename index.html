@@ -23,6 +23,14 @@
         <button type="submit">Say hello</button>
       </form>
 
+      <div id="invite" hidden role="alert">
+        <span id="invite-text"></span>
+        <button type="button" data-answer="yes">Yes, let's play</button>
+        <button type="button" data-answer="no">Not now</button>
+      </div>
+
+      <section id="game" hidden aria-label="Game" aria-live="polite"></section>
+
       <form id="talk">
         <label for="talk-input" class="visually-hidden">Say something to him</label>
         <input id="talk-input" maxlength="120" autocomplete="off" placeholder="Say something… e.g. “please play the piano”" />
@@ -38,13 +46,32 @@
         <button data-command="pat" title="Alt+T, or click him">Pat</button>
         <button data-command="phone" title="Alt+P">Phone</button>
         <button data-command="alarm" title="Alt+A">Alarm</button>
+        <button id="games-button" type="button" aria-expanded="false" title="Alt+C">Games…</button>
+        <button id="letters-button" type="button" title="Alt+L">Letters</button>
+      </div>
+      <div id="game-picker" hidden role="group" aria-label="Pick a game">
+        <button data-game="war">War</button>
+        <button data-game="poker">Poker</button>
+        <button data-game="anagrams">Anagrams</button>
+        <button data-game="wordPuzzle">Guess My Word</button>
+        <button data-game="">His choice</button>
       </div>
       <p id="supplies"></p>
+
+      <dialog id="letter-dialog" aria-labelledby="letter-heading">
+        <h2 id="letter-heading"></h2>
+        <article id="letter-text"></article>
+        <div class="row">
+          <button type="button" id="letter-prev">← Older</button>
+          <button type="button" id="letter-next">Newer →</button>
+          <button type="button" id="letter-close">Close</button>
+        </div>
+      </dialog>
 
       <pre id="debug" hidden></pre>
       <p class="hint">
         Shortcuts: <kbd>Alt</kbd>+<kbd>F</kbd> food, <kbd>W</kbd> water, <kbd>D</kbd> dog food, <kbd>R</kbd> record, <kbd>B</kbd> book,
-        <kbd>T</kbd> pat, <kbd>P</kbd> phone, <kbd>A</kbd> alarm. <kbd>Alt</kbd>+<kbd>N</kbd> needs panel, <kbd>Alt</kbd>+<kbd>G</kbd> floor graph.
+        <kbd>T</kbd> pat, <kbd>P</kbd> phone, <kbd>A</kbd> alarm, <kbd>C</kbd> games, <kbd>L</kbd> letters. <kbd>Alt</kbd>+<kbd>N</kbd> needs panel, <kbd>Alt</kbd>+<kbd>G</kbd> floor graph.
         URL: <code>?seed=123</code>, <code>?speed=1</code> (real time; default 30), <code>?quick</code>, <code>?movedIn</code>.
       </p>
     </main>

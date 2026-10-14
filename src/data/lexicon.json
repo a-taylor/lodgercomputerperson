@@ -41,7 +41,14 @@
     "get some sleep": "sleep",
     "put a record on": "records",
     "put on a record": "records",
-    "some music": "records"
+    "some music": "records",
+    "word game": "game",
+    "guess the word": "game",
+    "guess my word": "game",
+    "write me": "letter",
+    "of course": "yes",
+    "not now": "no",
+    "no thanks": "no"
   },
   "synonyms": {
     "television": "tv",
@@ -142,7 +149,16 @@
     "hurry": "rudeword",
     "immediately": "rudeword",
     "pathetic": "rudeword",
-    "ok": "okay"
+    "hangman": "game",
+    "yeah": "yes",
+    "yep": "yes",
+    "yup": "yes",
+    "sure": "yes",
+    "ok": "yes",
+    "okay": "yes",
+    "alright": "yes",
+    "nope": "no",
+    "nah": "no"
   },
   "rooms": [
     "kitchen",
@@ -196,7 +212,8 @@
         [
           "game"
         ]
-      ]
+      ],
+      "activity": "game"
     },
     {
       "id": "letter",
@@ -204,7 +221,8 @@
         [
           "letter"
         ]
-      ]
+      ],
+      "activity": "letter"
     },
     {
       "id": "piano",
@@ -327,6 +345,22 @@
       "all": [
         [
           "play"
+        ]
+      ]
+    },
+    {
+      "id": "yes",
+      "all": [
+        [
+          "yes"
+        ]
+      ]
+    },
+    {
+      "id": "no",
+      "all": [
+        [
+          "no"
         ]
       ]
     },
