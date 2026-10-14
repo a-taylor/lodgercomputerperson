@@ -13,8 +13,51 @@ export interface FigurePose {
   humming: boolean;
   /** Green about the gills. */
   sick: boolean;
+  /** When lying down: how high off the floor, which end his head is, and a nudge sideways. */
+  lie?: LieSpot;
   mood: number;
   tick: number;
+}
+
+const OUTLINE = '#340129';
+let scratch: HTMLCanvasElement | null = null;
+
+/**
+ * Draws something with the art pack's one-pixel dark outline around its silhouette. The sprite is
+ * drawn on a scratch canvas first; every empty pixel touching a filled one becomes outline.
+ */
+export function drawOutlined(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  draw: (c: CanvasRenderingContext2D, ox: number, oy: number) => void,
+): void {
+  const size = 48;
+  const half = size / 2;
+  scratch ??= Object.assign(document.createElement('canvas'), { width: size, height: size });
+  const s = scratch.getContext('2d', { willReadFrequently: true })!;
+  s.clearRect(0, 0, size, size);
+  const ox = Math.round(x);
+  const oy = Math.round(y);
+  draw(s, half, size - 4);
+  const img = s.getImageData(0, 0, size, size);
+  const d = img.data;
+  const filled = (i: number, j: number) => i >= 0 && j >= 0 && i < size && j < size && d[(j * size + i) * 4 + 3]! > 0;
+  const edge: number[] = [];
+  for (let j = 0; j < size; j++) {
+    for (let i = 0; i < size; i++) {
+      if (!filled(i, j) && (filled(i - 1, j) || filled(i + 1, j) || filled(i, j - 1) || filled(i, j + 1))) edge.push(i, j);
+    }
+  }
+  s.fillStyle = OUTLINE;
+  for (let k = 0; k < edge.length; k += 2) s.fillRect(edge[k]!, edge[k + 1]!, 1, 1);
+  ctx.drawImage(scratch, ox - half, oy - (size - 4));
+}
+
+export interface LieSpot {
+  height: number;
+  headRight?: boolean;
+  dx?: number;
 }
 
 /** Sickly green mixed into his skin tone. */
@@ -31,23 +74,23 @@ export function drawFigure(ctx: CanvasRenderingContext2D, look: Look, pose: Figu
   const skin = pose.sick ? sickly(look.skin) : look.skin;
 
   if (pose.pose === 'lie') {
-    // On the bed or in the bath: lying flat, head towards the wall.
-    const top = y - 10;
-    ctx.fillStyle = look.trousers;
-    ctx.fillRect(x, top, 7 + look.tall, 3);
-    ctx.fillStyle = look.shirt;
-    ctx.fillRect(x - 6, top, 7, 4);
-    ctx.fillStyle = skin;
-    ctx.fillRect(x - 11, top - 1, 5, 5);
-    if (look.hairStyle !== 'bald') {
-      ctx.fillStyle = look.hair;
-      ctx.fillRect(x - 12, top - 1, 2, 5);
-    }
+    // On the bed or in the bath, lying on the surface the furniture says, head at its pillow end.
+    const spot = pose.lie ?? { height: 6 };
+    const cx = x + (spot.dx ?? 0);
+    const top = y - spot.height - 4;
+    // Offsets are written head-left; mirrored when the head goes right.
+    const span = (from: number, len: number, rowY: number, h: number, colour: string) => {
+      ctx.fillStyle = colour;
+      ctx.fillRect(spot.headRight ? cx - (from + len - 1) : cx + from, rowY, len, h);
+    };
+    span(0, 7 + look.tall, top + 1, 3, look.trousers);
+    span(-6, 7, top, 4, look.shirt);
+    span(-11, 5, top - 1, 5, skin);
+    if (look.hairStyle !== 'bald') span(-12, 2, top - 1, 5, look.hair);
     if (pose.asleep) {
-      ctx.fillStyle = '#fff';
-      ctx.font = '6px monospace';
       const bob = Math.floor(pose.tick / 20) % 3;
-      ctx.fillText('z', x - 12 + bob * 2, top - 8 - bob * 2);
+      const zx = spot.headRight ? cx + 9 - bob * 2 : cx - 12 + bob * 2;
+      glyph(ctx, Z, zx, top - 8 - bob * 2);
     }
     return;
   }
@@ -120,10 +163,17 @@ export function drawFigure(ctx: CanvasRenderingContext2D, look: Look, pose: Figu
     ctx.fillRect(x + front * 4 - (front === 1 ? 0 : 6) + 2, y - 10, 3, 1);
   }
   if (pose.humming && pose.walking && Math.floor(pose.tick / 30) % 2 === 0) {
-    ctx.fillStyle = '#fff';
-    ctx.font = '6px monospace';
-    ctx.fillText('♪', x + front * 5, headTop - 4 - (Math.floor(pose.tick / 10) % 2));
+    glyph(ctx, NOTE, x + front * 5 - 1, headTop - 8 - (Math.floor(pose.tick / 10) % 2));
   }
+}
+
+// Tiny pixel glyphs, drawn as pixels rather than font text so they stay crisp (and outline cleanly).
+const Z = ['xxx', '..x', '.x.', 'x..', 'xxx'];
+const NOTE = ['..xx', '..x.', '..x.', 'xxx.', 'xx..'];
+
+function glyph(ctx: CanvasRenderingContext2D, rows: string[], x: number, y: number): void {
+  ctx.fillStyle = '#ffffff';
+  rows.forEach((row, j) => [...row].forEach((ch, i) => ch === 'x' && ctx.fillRect(x + i, y + j, 1, 1)));
 }
 
 function drawHair(ctx: CanvasRenderingContext2D, look: Look, x: number, top: number, front: number): void {

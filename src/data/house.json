@@ -1,100 +1,654 @@
 {
-  "size": { "width": 320, "height": 240 },
+  "size": {
+    "width": 320,
+    "height": 240
+  },
+  "frame": {
+    "leftCol": 1,
+    "rightCol": 38,
+    "roofRow": 5,
+    "groundRow": 26
+  },
   "floors": [
-    { "id": 0, "name": "Ground", "floorY": 230, "ceilingY": 160 },
-    { "id": 1, "name": "First", "floorY": 160, "ceilingY": 90 },
-    { "id": 2, "name": "Top", "floorY": 90, "ceilingY": 20 }
+    {
+      "id": 0,
+      "name": "Ground",
+      "floorY": 208,
+      "ceilingY": 152
+    },
+    {
+      "id": 1,
+      "name": "First",
+      "floorY": 152,
+      "ceilingY": 96
+    },
+    {
+      "id": 2,
+      "name": "Top",
+      "floorY": 96,
+      "ceilingY": 40
+    }
   ],
   "rooms": [
-    { "id": "living", "name": "Living room", "floor": 0, "x0": 16, "x1": 176, "colour": "#c9b28a" },
-    { "id": "kitchen", "name": "Kitchen", "floor": 0, "x0": 176, "x1": 304, "colour": "#b7c6a3" },
-    { "id": "den", "name": "Den", "floor": 1, "x0": 16, "x1": 144, "colour": "#b49aa8" },
-    { "id": "study", "name": "Study", "floor": 1, "x0": 144, "x1": 304, "colour": "#a8b4c4" },
-    { "id": "bedroom", "name": "Bedroom", "floor": 2, "x0": 16, "x1": 120, "colour": "#9fb3b0" },
-    { "id": "bathroom", "name": "Bathroom", "floor": 2, "x0": 120, "x1": 192, "colour": "#c2d4dc" },
-    { "id": "office", "name": "Office", "floor": 2, "x0": 192, "x1": 304, "colour": "#c4b49a" }
+    {
+      "id": "living",
+      "name": "Living room",
+      "floor": 0,
+      "x0": 16,
+      "x1": 176,
+      "wallpaper": "Wallpaper6"
+    },
+    {
+      "id": "kitchen",
+      "name": "Kitchen",
+      "floor": 0,
+      "x0": 176,
+      "x1": 304,
+      "wallpaper": "Wallpaper3"
+    },
+    {
+      "id": "den",
+      "name": "Den",
+      "floor": 1,
+      "x0": 16,
+      "x1": 144,
+      "wallpaper": "Wallpaper2"
+    },
+    {
+      "id": "study",
+      "name": "Study",
+      "floor": 1,
+      "x0": 144,
+      "x1": 304,
+      "wallpaper": "Wallpaper1"
+    },
+    {
+      "id": "bedroom",
+      "name": "Bedroom",
+      "floor": 2,
+      "x0": 16,
+      "x1": 120,
+      "wallpaper": "Wallpaper5"
+    },
+    {
+      "id": "bathroom",
+      "name": "Bathroom",
+      "floor": 2,
+      "x0": 120,
+      "x1": 192,
+      "wallpaper": "Wallpaper3"
+    },
+    {
+      "id": "office",
+      "name": "Office",
+      "floor": 2,
+      "x0": 192,
+      "x1": 304,
+      "wallpaper": "Wallpaper4"
+    }
   ],
   "nodes": [
-    { "id": "living.door", "room": "living", "x": 28 },
-    { "id": "living.stairs", "room": "living", "x": 60 },
-    { "id": "living.armchair", "room": "living", "x": 96 },
-    { "id": "living.fireplace", "room": "living", "x": 132 },
-    { "id": "living.phone", "room": "living", "x": 162 },
-    { "id": "kitchen.table", "room": "kitchen", "x": 200 },
-    { "id": "kitchen.stove", "room": "kitchen", "x": 234 },
-    { "id": "kitchen.fridge", "room": "kitchen", "x": 264 },
-    { "id": "kitchen.bowl", "room": "kitchen", "x": 290 },
-
-    { "id": "den.tv", "room": "den", "x": 34 },
-    { "id": "den.records", "room": "den", "x": 64 },
-    { "id": "den.stairs", "room": "den", "x": 100 },
-    { "id": "den.piano", "room": "den", "x": 126 },
-    { "id": "study.typewriter", "room": "study", "x": 168 },
-    { "id": "study.games", "room": "study", "x": 206 },
-    { "id": "study.stairs", "room": "study", "x": 250 },
-    { "id": "study.window", "room": "study", "x": 284 },
-
-    { "id": "bedroom.bed", "room": "bedroom", "x": 38 },
-    { "id": "bedroom.rug", "room": "bedroom", "x": 72 },
-    { "id": "bedroom.closet", "room": "bedroom", "x": 104 },
-    { "id": "bathroom.bath", "room": "bathroom", "x": 140 },
-    { "id": "bathroom.sink", "room": "bathroom", "x": 176 },
-    { "id": "office.clock", "room": "office", "x": 204 },
-    { "id": "office.bookshelf", "room": "office", "x": 230 },
-    { "id": "office.computer", "room": "office", "x": 262 },
-    { "id": "office.stairs", "room": "office", "x": 290 }
+    {
+      "id": "living.door",
+      "room": "living",
+      "x": 24
+    },
+    {
+      "id": "living.stairs",
+      "room": "living",
+      "x": 40
+    },
+    {
+      "id": "living.armchair",
+      "room": "living",
+      "x": 112
+    },
+    {
+      "id": "living.fireplace",
+      "room": "living",
+      "x": 142
+    },
+    {
+      "id": "living.phone",
+      "room": "living",
+      "x": 165
+    },
+    {
+      "id": "kitchen.table",
+      "room": "kitchen",
+      "x": 200
+    },
+    {
+      "id": "kitchen.stove",
+      "room": "kitchen",
+      "x": 240
+    },
+    {
+      "id": "kitchen.fridge",
+      "room": "kitchen",
+      "x": 272
+    },
+    {
+      "id": "kitchen.bowl",
+      "room": "kitchen",
+      "x": 292
+    },
+    {
+      "id": "den.tv",
+      "room": "den",
+      "x": 28
+    },
+    {
+      "id": "den.records",
+      "room": "den",
+      "x": 56
+    },
+    {
+      "id": "den.stairs",
+      "room": "den",
+      "x": 96
+    },
+    {
+      "id": "den.piano",
+      "room": "den",
+      "x": 124
+    },
+    {
+      "id": "study.typewriter",
+      "room": "study",
+      "x": 164
+    },
+    {
+      "id": "study.games",
+      "room": "study",
+      "x": 200
+    },
+    {
+      "id": "study.window",
+      "room": "study",
+      "x": 220
+    },
+    {
+      "id": "study.stairs",
+      "room": "study",
+      "x": 240
+    },
+    {
+      "id": "bedroom.bed",
+      "room": "bedroom",
+      "x": 36
+    },
+    {
+      "id": "bedroom.rug",
+      "room": "bedroom",
+      "x": 72
+    },
+    {
+      "id": "bedroom.closet",
+      "room": "bedroom",
+      "x": 105
+    },
+    {
+      "id": "bathroom.bath",
+      "room": "bathroom",
+      "x": 140
+    },
+    {
+      "id": "bathroom.sink",
+      "room": "bathroom",
+      "x": 176
+    },
+    {
+      "id": "office.clock",
+      "room": "office",
+      "x": 204
+    },
+    {
+      "id": "office.bookshelf",
+      "room": "office",
+      "x": 226
+    },
+    {
+      "id": "office.computer",
+      "room": "office",
+      "x": 262
+    },
+    {
+      "id": "office.stairs",
+      "room": "office",
+      "x": 296
+    }
   ],
   "edges": [
-    { "a": "living.door", "b": "living.stairs" },
-    { "a": "living.stairs", "b": "living.armchair" },
-    { "a": "living.armchair", "b": "living.fireplace" },
-    { "a": "living.fireplace", "b": "living.phone" },
-    { "a": "living.phone", "b": "kitchen.table" },
-    { "a": "kitchen.table", "b": "kitchen.stove" },
-    { "a": "kitchen.stove", "b": "kitchen.fridge" },
-    { "a": "kitchen.fridge", "b": "kitchen.bowl" },
-
-    { "a": "den.tv", "b": "den.records" },
-    { "a": "den.records", "b": "den.stairs" },
-    { "a": "den.stairs", "b": "den.piano" },
-    { "a": "den.piano", "b": "study.typewriter" },
-    { "a": "study.typewriter", "b": "study.games" },
-    { "a": "study.games", "b": "study.stairs" },
-    { "a": "study.stairs", "b": "study.window" },
-
-    { "a": "bedroom.bed", "b": "bedroom.rug" },
-    { "a": "bedroom.rug", "b": "bedroom.closet" },
-    { "a": "bedroom.closet", "b": "bathroom.bath" },
-    { "a": "bathroom.bath", "b": "bathroom.sink" },
-    { "a": "bathroom.sink", "b": "office.clock" },
-    { "a": "office.clock", "b": "office.bookshelf" },
-    { "a": "office.bookshelf", "b": "office.computer" },
-    { "a": "office.computer", "b": "office.stairs" },
-
-    { "a": "living.stairs", "b": "den.stairs", "kind": "stairs" },
-    { "a": "study.stairs", "b": "office.stairs", "kind": "stairs" }
+    {
+      "a": "living.door",
+      "b": "living.stairs"
+    },
+    {
+      "a": "living.stairs",
+      "b": "living.armchair"
+    },
+    {
+      "a": "living.armchair",
+      "b": "living.fireplace"
+    },
+    {
+      "a": "living.fireplace",
+      "b": "living.phone"
+    },
+    {
+      "a": "living.phone",
+      "b": "kitchen.table"
+    },
+    {
+      "a": "kitchen.table",
+      "b": "kitchen.stove"
+    },
+    {
+      "a": "kitchen.stove",
+      "b": "kitchen.fridge"
+    },
+    {
+      "a": "kitchen.fridge",
+      "b": "kitchen.bowl"
+    },
+    {
+      "a": "den.tv",
+      "b": "den.records"
+    },
+    {
+      "a": "den.records",
+      "b": "den.stairs"
+    },
+    {
+      "a": "den.stairs",
+      "b": "den.piano"
+    },
+    {
+      "a": "den.piano",
+      "b": "study.typewriter"
+    },
+    {
+      "a": "study.typewriter",
+      "b": "study.games"
+    },
+    {
+      "a": "study.games",
+      "b": "study.window"
+    },
+    {
+      "a": "study.window",
+      "b": "study.stairs"
+    },
+    {
+      "a": "bedroom.bed",
+      "b": "bedroom.rug"
+    },
+    {
+      "a": "bedroom.rug",
+      "b": "bedroom.closet"
+    },
+    {
+      "a": "bedroom.closet",
+      "b": "bathroom.bath"
+    },
+    {
+      "a": "bathroom.bath",
+      "b": "bathroom.sink"
+    },
+    {
+      "a": "bathroom.sink",
+      "b": "office.clock"
+    },
+    {
+      "a": "office.clock",
+      "b": "office.bookshelf"
+    },
+    {
+      "a": "office.bookshelf",
+      "b": "office.computer"
+    },
+    {
+      "a": "office.computer",
+      "b": "office.stairs"
+    },
+    {
+      "a": "living.stairs",
+      "b": "den.stairs",
+      "kind": "stairs"
+    },
+    {
+      "a": "study.stairs",
+      "b": "office.stairs",
+      "kind": "stairs"
+    }
   ],
   "furniture": [
-    { "id": "front-door", "name": "Front door", "room": "living", "x": 18, "w": 12, "h": 34, "colour": "#6b4a2e", "use": "living.door" },
-    { "id": "armchair", "name": "Armchair", "room": "living", "x": 88, "w": 18, "h": 16, "colour": "#8a3b3b", "use": "living.armchair" },
-    { "id": "fireplace", "name": "Fireplace", "room": "living", "x": 122, "w": 22, "h": 26, "colour": "#7a6f66", "use": "living.fireplace" },
-    { "id": "phone", "name": "Phone", "room": "living", "x": 158, "w": 8, "h": 14, "colour": "#2e2e2e", "use": "living.phone" },
-    { "id": "kitchen-table", "name": "Table", "room": "kitchen", "x": 190, "w": 22, "h": 12, "colour": "#9b7448", "use": "kitchen.table" },
-    { "id": "stove", "name": "Stove", "room": "kitchen", "x": 226, "w": 16, "h": 20, "colour": "#d9d9d9", "use": "kitchen.stove" },
-    { "id": "fridge", "name": "Fridge", "room": "kitchen", "x": 256, "w": 16, "h": 32, "colour": "#eef2f3", "use": "kitchen.fridge" },
-    { "id": "dog-bowl", "name": "Dog bowl", "room": "kitchen", "x": 286, "w": 8, "h": 3, "colour": "#3a6ea5", "use": "kitchen.bowl" },
-    { "id": "tv", "name": "Television", "room": "den", "x": 26, "w": 16, "h": 18, "colour": "#3b3b44", "use": "den.tv" },
-    { "id": "record-player", "name": "Record player", "room": "den", "x": 56, "w": 16, "h": 12, "colour": "#5c4632", "use": "den.records" },
-    { "id": "piano", "name": "Piano", "room": "den", "x": 114, "w": 24, "h": 22, "colour": "#1f1a17", "use": "den.piano" },
-    { "id": "typewriter", "name": "Typewriter desk", "room": "study", "x": 158, "w": 20, "h": 14, "colour": "#7b5b3a", "use": "study.typewriter" },
-    { "id": "games-cabinet", "name": "Games cabinet", "room": "study", "x": 196, "w": 20, "h": 24, "colour": "#8c6e4b", "use": "study.games" },
-    { "id": "bed", "name": "Bed", "room": "bedroom", "x": 22, "w": 32, "h": 12, "colour": "#d7c8b0", "use": "bedroom.bed" },
-    { "id": "exercise-rug", "name": "Exercise rug", "room": "bedroom", "x": 62, "w": 20, "h": 2, "colour": "#a33b4a", "use": "bedroom.rug" },
-    { "id": "closet", "name": "Closet", "room": "bedroom", "x": 96, "w": 16, "h": 36, "colour": "#7d6650", "use": "bedroom.closet" },
-    { "id": "bath", "name": "Bath", "room": "bathroom", "x": 126, "w": 28, "h": 12, "colour": "#f4f4f4", "use": "bathroom.bath" },
-    { "id": "sink", "name": "Sink", "room": "bathroom", "x": 170, "w": 12, "h": 18, "colour": "#e8eef0", "use": "bathroom.sink" },
-    { "id": "clock", "name": "Clock", "room": "office", "x": 199, "w": 10, "h": 10, "elevation": 30, "colour": "#e9d9a0", "use": "office.clock" },
-    { "id": "bookshelf", "name": "Bookshelf", "room": "office", "x": 220, "w": 20, "h": 40, "colour": "#6e4f33", "use": "office.bookshelf" },
-    { "id": "computer", "name": "Computer desk", "room": "office", "x": 252, "w": 20, "h": 20, "colour": "#b9b39c", "use": "office.computer" }
+    {
+      "id": "front-door",
+      "name": "Front door",
+      "room": "living",
+      "x": 16,
+      "art": "pack:House/Door_Front_Left",
+      "use": "living.door"
+    },
+    {
+      "id": "plant",
+      "name": "Plant",
+      "room": "living",
+      "x": 64,
+      "art": "pack:Furniture/Plant"
+    },
+    {
+      "id": "painting-living",
+      "name": "Painting",
+      "room": "living",
+      "x": 104,
+      "elevation": 26,
+      "art": "pack:Furniture/Painting_Large"
+    },
+    {
+      "id": "armchair",
+      "name": "Armchair",
+      "room": "living",
+      "x": 104,
+      "art": "pack:Furniture/SoftChair",
+      "use": "living.armchair"
+    },
+    {
+      "id": "floor-lamp",
+      "name": "Floor lamp",
+      "room": "living",
+      "x": 121,
+      "art": "pack:Furniture/FloorLamp"
+    },
+    {
+      "id": "fireplace",
+      "name": "Fireplace",
+      "room": "living",
+      "x": 130,
+      "art": "drawn:fireplace",
+      "use": "living.fireplace"
+    },
+    {
+      "id": "phone",
+      "name": "Telephone",
+      "room": "living",
+      "x": 160,
+      "art": "drawn:phoneTable",
+      "use": "living.phone"
+    },
+    {
+      "id": "lamp-kitchen",
+      "name": "Lamp",
+      "room": "kitchen",
+      "x": 196,
+      "art": "lamp"
+    },
+    {
+      "id": "chair-left",
+      "name": "Chair",
+      "room": "kitchen",
+      "x": 184,
+      "art": "pack:Furniture/Chair"
+    },
+    {
+      "id": "kitchen-table",
+      "name": "Table",
+      "room": "kitchen",
+      "x": 192,
+      "art": "pack:Furniture/Table_Single",
+      "use": "kitchen.table"
+    },
+    {
+      "id": "teapot",
+      "name": "Teapot",
+      "room": "kitchen",
+      "x": 196,
+      "elevation": 8,
+      "art": "pack:Furniture/Teapot"
+    },
+    {
+      "id": "chair-right",
+      "name": "Chair",
+      "room": "kitchen",
+      "x": 208,
+      "art": "pack:Furniture/Chair"
+    },
+    {
+      "id": "counter-left",
+      "name": "Counter",
+      "room": "kitchen",
+      "x": 224,
+      "art": "pack:Furniture/KitchenCounter_Left"
+    },
+    {
+      "id": "oven",
+      "name": "Stove",
+      "room": "kitchen",
+      "x": 232,
+      "art": "pack:Furniture/KitchenCounter_Oven",
+      "use": "kitchen.stove"
+    },
+    {
+      "id": "counter-right",
+      "name": "Counter",
+      "room": "kitchen",
+      "x": 248,
+      "art": "pack:Furniture/KitchenCounter_Right"
+    },
+    {
+      "id": "mug",
+      "name": "Mug",
+      "room": "kitchen",
+      "x": 224,
+      "elevation": 8,
+      "art": "pack:Furniture/Mug"
+    },
+    {
+      "id": "kitchen-window",
+      "name": "Window",
+      "room": "kitchen",
+      "x": 232,
+      "elevation": 20,
+      "art": "pack:House/Window_Front"
+    },
+    {
+      "id": "fridge",
+      "name": "Fridge",
+      "room": "kitchen",
+      "x": 264,
+      "art": "pack:Furniture/Fridge",
+      "use": "kitchen.fridge"
+    },
+    {
+      "id": "dog-bowl",
+      "name": "Dog bowl",
+      "room": "kitchen",
+      "x": 288,
+      "art": "drawn:dogBowl",
+      "use": "kitchen.bowl"
+    },
+    {
+      "id": "tv-table",
+      "name": "TV stand",
+      "room": "den",
+      "x": 20,
+      "art": "pack:Furniture/TelevisionTable"
+    },
+    {
+      "id": "tv",
+      "name": "Television",
+      "room": "den",
+      "x": 20,
+      "elevation": 8,
+      "art": "pack:Furniture/Television",
+      "use": "den.tv"
+    },
+    {
+      "id": "record-player",
+      "name": "Record player",
+      "room": "den",
+      "x": 48,
+      "art": "drawn:recordPlayer",
+      "use": "den.records"
+    },
+    {
+      "id": "painting-den",
+      "name": "Painting",
+      "room": "den",
+      "x": 70,
+      "elevation": 22,
+      "art": "pack:Furniture/Painting_Small"
+    },
+    {
+      "id": "piano",
+      "name": "Piano",
+      "room": "den",
+      "x": 112,
+      "art": "drawn:piano",
+      "use": "den.piano"
+    },
+    {
+      "id": "lamp-study",
+      "name": "Lamp",
+      "room": "study",
+      "x": 164,
+      "art": "lamp"
+    },
+    {
+      "id": "typewriter",
+      "name": "Typewriter desk",
+      "room": "study",
+      "x": 152,
+      "art": "drawn:typewriterDesk",
+      "use": "study.typewriter"
+    },
+    {
+      "id": "bookshelf-study",
+      "name": "Bookshelf",
+      "room": "study",
+      "x": 176,
+      "art": "pack:Furniture/BookShelfs_Small"
+    },
+    {
+      "id": "games-cabinet",
+      "name": "Games cabinet",
+      "room": "study",
+      "x": 192,
+      "art": "drawn:gamesCabinet",
+      "use": "study.games"
+    },
+    {
+      "id": "study-window",
+      "name": "Window",
+      "room": "study",
+      "x": 212,
+      "elevation": 18,
+      "art": "pack:House/Window_Front",
+      "use": "study.window"
+    },
+    {
+      "id": "bed",
+      "name": "Bed",
+      "room": "bedroom",
+      "x": 24,
+      "art": "pack:Furniture/Bed_Angle1",
+      "use": "bedroom.bed",
+      "lie": {
+        "height": 9,
+        "headRight": true,
+        "dx": -3
+      }
+    },
+    {
+      "id": "painting-bedroom",
+      "name": "Painting",
+      "room": "bedroom",
+      "x": 64,
+      "elevation": 22,
+      "art": "pack:Furniture/Painting_Large"
+    },
+    {
+      "id": "exercise-rug",
+      "name": "Exercise rug",
+      "room": "bedroom",
+      "x": 60,
+      "art": "drawn:exerciseRug",
+      "use": "bedroom.rug"
+    },
+    {
+      "id": "wardrobe",
+      "name": "Wardrobe",
+      "room": "bedroom",
+      "x": 96,
+      "art": "drawn:wardrobe",
+      "use": "bedroom.closet"
+    },
+    {
+      "id": "bath",
+      "name": "Bath",
+      "room": "bathroom",
+      "x": 128,
+      "art": "pack:Furniture/BarthTub",
+      "use": "bathroom.bath",
+      "lie": {
+        "height": 8
+      }
+    },
+    {
+      "id": "toilet",
+      "name": "Toilet",
+      "room": "bathroom",
+      "x": 154,
+      "art": "pack:Furniture/Toilet"
+    },
+    {
+      "id": "rubber-duck",
+      "name": "Rubber duck",
+      "room": "bathroom",
+      "x": 140,
+      "elevation": 9,
+      "art": "pack:Furniture/RubberDuck"
+    },
+    {
+      "id": "sink",
+      "name": "Sink",
+      "room": "bathroom",
+      "x": 172,
+      "art": "pack:Furniture/Sink",
+      "use": "bathroom.sink"
+    },
+    {
+      "id": "clock",
+      "name": "Clock",
+      "room": "office",
+      "x": 199,
+      "art": "drawn:clock",
+      "use": "office.clock"
+    },
+    {
+      "id": "bookshelf",
+      "name": "Bookshelf",
+      "room": "office",
+      "x": 214,
+      "art": "pack:Furniture/BookShelfs_Large",
+      "use": "office.bookshelf"
+    },
+    {
+      "id": "lamp-office",
+      "name": "Lamp",
+      "room": "office",
+      "x": 260,
+      "art": "lamp"
+    },
+    {
+      "id": "computer",
+      "name": "Computer desk",
+      "room": "office",
+      "x": 250,
+      "art": "drawn:computerDesk",
+      "use": "office.computer"
+    }
   ]
 }

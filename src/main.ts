@@ -1,5 +1,5 @@
-import { drawHouse } from './render/canvas';
-import { drawDog, drawFigure } from './render/sprites';
+import { drawHouse, loadArt } from './render/canvas';
+import { drawDog, drawFigure, drawOutlined } from './render/sprites';
 import { GAME_NAMES, type GameKind } from './sim/games';
 import type { DeliveryItem } from './sim/interactions';
 import { NEED_IDS } from './sim/needs';
@@ -102,9 +102,23 @@ let showGraph = false;
 let introDismissed = false;
 let scale = 1;
 const pending: Command[] = [];
+const art = await loadArt();
+// ?debug exposes the running game to the console, for poking at it while developing.
+if (params.has('debug')) Object.assign(window, { lcp: { sim, world } });
 
+// ?zoom=4&x=120&y=80 shows a close-up of part of the house, for checking pixels (dev).
+const zoom = Number(params.get('zoom')) || 0;
 function fitCanvas(): void {
-  scale = Math.max(1, Math.floor(Math.min((innerWidth - 32) / width, (innerHeight - 260) / height)));
+  if (zoom) {
+    scale = zoom;
+    stage.style.overflow = 'hidden';
+    stage.style.width = `${Math.min(innerWidth - 32, width * zoom)}px`;
+    stage.style.height = `${Math.min(innerHeight - 220, height * zoom)}px`;
+    canvas.style.marginLeft = `${-(Number(params.get('x')) || 0) * zoom}px`;
+    canvas.style.marginTop = `${-(Number(params.get('y')) || 0) * zoom}px`;
+  } else {
+    scale = Math.max(1, Math.floor(Math.min((innerWidth - 32) / width, (innerHeight - 260) / height)));
+  }
   canvas.style.width = `${width * scale}px`;
   canvas.style.height = `${height * scale}px`;
 }
@@ -537,24 +551,28 @@ function frame(now: number): void {
   const py = lerp(prev.y, p.y);
 
   ctx.imageSmoothingEnabled = false;
-  drawHouse(ctx, house, (sim.clock.ms % DAY_MS) / HOUR_MS, showGraph);
+  drawHouse(ctx, house, art, (sim.clock.ms % DAY_MS) / HOUR_MS, sim.tick, showGraph);
+  // The tenant and the dog get the art pack's dark outline, so they sit in the same world.
   if (dog.present) {
-    drawDog(ctx, dog.identity, lerp(prev.dx, dog.x), lerp(prev.dy, dog.y), dog.facing, dog.path.length > 0, dog.food > 50, sim.tick);
+    drawOutlined(ctx, lerp(prev.dx, dog.x), lerp(prev.dy, dog.y), (c, x, y) =>
+      drawDog(c, dog.identity, x, y, dog.facing, dog.path.length > 0, dog.food > 50, sim.tick),
+    );
   }
   if (p.present && p.alive) {
-    drawFigure(ctx, p.identity.look, {
-      x: px,
-      y: py,
+    drawOutlined(ctx, px, py, (c, x, y) => drawFigure(c, p.identity.look, {
+      x,
+      y,
       facing: p.facing,
       walking: p.path.length > 0,
       pose: p.activity?.doing ? (currentStep(sim, world)?.pose ?? 'stand') : 'stand',
+      lie: house.def.furniture.find((f) => f.use === p.at && f.lie)?.lie,
       asleep: isAsleep(sim, world),
       carrying: p.carrying,
       humming: p.identity.quirks.includes('hummer'),
       sick: p.sick,
       mood: p.mood,
       tick: sim.tick,
-    });
+    }));
   }
   updateOverlays(px, py);
   updateControls();

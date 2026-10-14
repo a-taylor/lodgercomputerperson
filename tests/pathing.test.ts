@@ -15,7 +15,7 @@ describe('house data', () => {
   });
 
   it('gives every piece of furniture a reachable interaction node', () => {
-    for (const f of houseDef.furniture) expect(house.nodes.has(f.use)).toBe(true);
+    for (const f of houseDef.furniture) if (f.use) expect(house.nodes.has(f.use)).toBe(true);
   });
 
   it('rejects broken data', () => {
@@ -70,6 +70,7 @@ describe('findPath', () => {
       'den.piano',
       'study.typewriter',
       'study.games',
+      'study.window',
       'study.stairs',
       'office.stairs',
       'office.computer',
@@ -86,8 +87,9 @@ describe('findPath', () => {
   it('picks the shorter of two routes', () => {
     const def: HouseDef = {
       size: { width: 100, height: 100 },
+      frame: { leftCol: 0, rightCol: 12, roofRow: 0, groundRow: 6 },
       floors: [{ id: 0, name: 'G', floorY: 50, ceilingY: 0 }],
-      rooms: [{ id: 'r', name: 'R', floor: 0, x0: 0, x1: 100, colour: '#000' }],
+      rooms: [{ id: 'r', name: 'R', floor: 0, x0: 0, x1: 100, wallpaper: 'Wallpaper1' }],
       nodes: [
         { id: 'a', room: 'r', x: 0 },
         { id: 'b', room: 'r', x: 10 },

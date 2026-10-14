@@ -90,6 +90,7 @@
           <input type="file" id="import-file" accept="application/json,.json" hidden />
           <button type="button" class="open-memorial">Memorial</button>
         </div>
+        <p class="credits">Graphics created by Penzilla Design (<a href="https://penzilla.itch.io/house-interior">house interior pack</a>). Extra furniture, the tenant and the dog are original.</p>
       </details>
 
       <dialog id="memorial-dialog" aria-labelledby="memorial-heading">
@@ -102,7 +103,7 @@
       <p class="hint">
         Shortcuts: <kbd>Alt</kbd>+<kbd>F</kbd> food, <kbd>W</kbd> water, <kbd>D</kbd> dog food, <kbd>R</kbd> record, <kbd>B</kbd> book,
         <kbd>T</kbd> pat, <kbd>P</kbd> phone, <kbd>A</kbd> alarm, <kbd>C</kbd> games, <kbd>L</kbd> letters. <kbd>Alt</kbd>+<kbd>N</kbd> needs panel, <kbd>Alt</kbd>+<kbd>G</kbd> floor graph.
-        URL: <code>?seed=123</code>, <code>?speed=1</code> (starting speed; default 30), <code>?quick</code>, <code>?movedIn</code>, <code>?fresh</code> (ignore the save and start again; it will be overwritten).
+        URL: <code>?seed=123</code>, <code>?speed=1</code> (starting speed; default 30), <code>?quick</code>, <code>?movedIn</code>, <code>?fresh</code> (ignore the save and start again; it will be overwritten). Dev: <code>?zoom=4&amp;x=0&amp;y=0</code> close-up, <code>?debug</code> exposes <code>lcp</code> in the console.
       </p>
     </main>
     <script type="module" src="/src/main.ts"></script>

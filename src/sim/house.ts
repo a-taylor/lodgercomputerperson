@@ -13,7 +13,8 @@ export interface RoomDef {
   floor: number;
   x0: number;
   x1: number;
-  colour: string;
+  /** Which of the pack's wallpapers, e.g. "Wallpaper3". */
+  wallpaper: string;
 }
 
 export interface NodeDef {
@@ -32,16 +33,31 @@ export interface FurnitureDef {
   id: string;
   name: string;
   room: string;
+  /** Left edge, in house pixels. */
   x: number;
-  w: number;
-  h: number;
+  /** Pixels above the floor, for things on tables or walls. */
   elevation?: number;
-  colour: string;
-  use: string;
+  /** "pack:Furniture/Fridge" (a Penzilla image), "drawn:piano" (drawnSprites.ts), or "lamp" (a hanging lamp). */
+  art: string;
+  /** The node where he uses it. Decorations don't have one. */
+  use?: string;
+  /** For beds and baths: where he lies (height off the floor, pillow end, sideways nudge). */
+  lie?: { height: number; headRight?: boolean; dx?: number };
+}
+
+/** The outer frame on the 8-pixel tile grid. */
+export interface FrameDef {
+  leftCol: number;
+  rightCol: number;
+  /** The beam under the roof. */
+  roofRow: number;
+  /** The beam he stands on downstairs. */
+  groundRow: number;
 }
 
 export interface HouseDef {
   size: { width: number; height: number };
+  frame: FrameDef;
   floors: FloorDef[];
   rooms: RoomDef[];
   nodes: NodeDef[];
@@ -111,7 +127,8 @@ export function buildHouse(def: HouseDef): House {
 
   for (const f of def.furniture) {
     if (!rooms.has(f.room)) throw new Error(`Furniture "${f.id}" is in unknown room "${f.room}"`);
-    if (!nodes.has(f.use)) throw new Error(`Furniture "${f.id}" uses unknown node "${f.use}"`);
+    if (f.use !== undefined && !nodes.has(f.use)) throw new Error(`Furniture "${f.id}" uses unknown node "${f.use}"`);
+    if (!/^(pack:(House|Furniture)\/[\w']+|drawn:\w+|lamp)$/.test(f.art)) throw new Error(`Furniture "${f.id}" has bad art "${f.art}"`);
   }
 
   return { def, nodeIds: [...nodes.keys()].sort(), nodes, adjacency };
