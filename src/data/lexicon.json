@@ -1,0 +1,359 @@
+{
+  "phrases": {
+    "how are you": "howareyou",
+    "how are things": "howareyou",
+    "how do you feel": "howareyou",
+    "you ok": "howareyou",
+    "you alright": "howareyou",
+    "wake up": "wakeup",
+    "get up": "wakeup",
+    "rise and shine": "wakeup",
+    "work out": "exercise",
+    "press ups": "exercise",
+    "push ups": "exercise",
+    "sit ups": "exercise",
+    "thank you": "thanks",
+    "my name is": "mynameis",
+    "call me": "mynameis",
+    "i am called": "mynameis",
+    "play with me": "game",
+    "play together": "game",
+    "could you": "politeask",
+    "would you": "politeask",
+    "can you": "politeask",
+    "will you": "politeask",
+    "would you mind": "politeask",
+    "do you mind": "politeask",
+    "if you dont mind": "politeask",
+    "how about": "politeask",
+    "fancy": "politeask",
+    "would you like to": "politeask",
+    "i would love it if you": "politeask",
+    "living room": "living",
+    "front room": "living",
+    "sitting room": "living",
+    "shut up": "rudeword",
+    "right now": "now",
+    "brush your teeth": "wash",
+    "have a bath": "wash",
+    "take a shower": "wash",
+    "go to bed": "sleep",
+    "get some sleep": "sleep",
+    "put a record on": "records",
+    "put on a record": "records",
+    "some music": "records"
+  },
+  "synonyms": {
+    "television": "tv",
+    "telly": "tv",
+    "tele": "tv",
+    "telle": "tv",
+    "pianoforte": "piano",
+    "ivories": "piano",
+    "keyboard": "piano",
+    "tune": "piano",
+    "record": "records",
+    "music": "records",
+    "song": "records",
+    "songs": "records",
+    "album": "records",
+    "vinyl": "records",
+    "disc": "records",
+    "book": "read",
+    "books": "read",
+    "novel": "read",
+    "reading": "read",
+    "dancing": "dance",
+    "boogie": "dance",
+    "jig": "dance",
+    "groove": "dance",
+    "exercising": "exercise",
+    "workout": "exercise",
+    "pushups": "exercise",
+    "stretch": "exercise",
+    "jog": "exercise",
+    "food": "eat",
+    "dinner": "eat",
+    "lunch": "eat",
+    "breakfast": "eat",
+    "meal": "eat",
+    "supper": "eat",
+    "snack": "eat",
+    "cook": "eat",
+    "cooking": "eat",
+    "hungry": "eat",
+    "eating": "eat",
+    "water": "drink",
+    "thirsty": "drink",
+    "drinking": "drink",
+    "bed": "sleep",
+    "nap": "sleep",
+    "rest": "sleep",
+    "sleeping": "sleep",
+    "bedtime": "sleep",
+    "snooze": "sleep",
+    "bath": "wash",
+    "shower": "wash",
+    "bathe": "wash",
+    "washing": "wash",
+    "teeth": "wash",
+    "clean": "wash",
+    "fed": "feed",
+    "feeding": "feed",
+    "puppy": "dog",
+    "pup": "dog",
+    "pooch": "dog",
+    "doggy": "dog",
+    "doggie": "dog",
+    "awake": "wakeup",
+    "lounge": "living",
+    "pls": "please",
+    "plz": "please",
+    "kindly": "please",
+    "cheers": "thanks",
+    "thank": "thanks",
+    "ta": "thanks",
+    "thx": "thanks",
+    "hi": "hello",
+    "hey": "hello",
+    "hiya": "hello",
+    "howdy": "hello",
+    "morning": "hello",
+    "evening": "hello",
+    "afternoon": "hello",
+    "greetings": "hello",
+    "yo": "hello",
+    "letter": "letter",
+    "write": "letter",
+    "typewriter": "letter",
+    "type": "letter",
+    "cards": "game",
+    "poker": "game",
+    "war": "game",
+    "games": "game",
+    "anagrams": "game",
+    "anagram": "game",
+    "puzzle": "game",
+    "stupid": "rudeword",
+    "idiot": "rudeword",
+    "lazy": "rudeword",
+    "dumb": "rudeword",
+    "useless": "rudeword",
+    "hurry": "rudeword",
+    "immediately": "rudeword",
+    "pathetic": "rudeword",
+    "ok": "okay"
+  },
+  "rooms": [
+    "kitchen",
+    "bedroom",
+    "bathroom",
+    "den",
+    "study",
+    "office",
+    "living"
+  ],
+  "intents": [
+    {
+      "id": "name",
+      "all": [
+        [
+          "mynameis"
+        ]
+      ]
+    },
+    {
+      "id": "feedDog",
+      "all": [
+        [
+          "feed"
+        ],
+        [
+          "dog"
+        ]
+      ],
+      "activity": "feedDog"
+    },
+    {
+      "id": "wake",
+      "all": [
+        [
+          "wakeup"
+        ]
+      ]
+    },
+    {
+      "id": "howAreYou",
+      "all": [
+        [
+          "howareyou"
+        ]
+      ]
+    },
+    {
+      "id": "game",
+      "all": [
+        [
+          "game"
+        ]
+      ]
+    },
+    {
+      "id": "letter",
+      "all": [
+        [
+          "letter"
+        ]
+      ]
+    },
+    {
+      "id": "piano",
+      "all": [
+        [
+          "piano"
+        ]
+      ],
+      "activity": "piano"
+    },
+    {
+      "id": "dance",
+      "all": [
+        [
+          "dance"
+        ]
+      ],
+      "activity": "dance"
+    },
+    {
+      "id": "music",
+      "all": [
+        [
+          "records"
+        ]
+      ],
+      "activity": "music"
+    },
+    {
+      "id": "tv",
+      "all": [
+        [
+          "tv"
+        ]
+      ],
+      "activity": "tv"
+    },
+    {
+      "id": "read",
+      "all": [
+        [
+          "read"
+        ]
+      ],
+      "activity": "read"
+    },
+    {
+      "id": "exercise",
+      "all": [
+        [
+          "exercise"
+        ]
+      ],
+      "activity": "exercise"
+    },
+    {
+      "id": "eat",
+      "all": [
+        [
+          "eat"
+        ]
+      ],
+      "activity": "eat"
+    },
+    {
+      "id": "drink",
+      "all": [
+        [
+          "drink"
+        ]
+      ],
+      "activity": "drink"
+    },
+    {
+      "id": "sleep",
+      "all": [
+        [
+          "sleep"
+        ]
+      ],
+      "activity": "sleep"
+    },
+    {
+      "id": "wash",
+      "all": [
+        [
+          "wash"
+        ]
+      ],
+      "activity": "wash"
+    },
+    {
+      "id": "goTo",
+      "all": [
+        [
+          "go",
+          "come",
+          "walk",
+          "head",
+          "visit",
+          "pop",
+          "run"
+        ],
+        [
+          "$room"
+        ]
+      ]
+    },
+    {
+      "id": "tvWatch",
+      "all": [
+        [
+          "watch"
+        ]
+      ],
+      "activity": "tv"
+    },
+    {
+      "id": "playWhat",
+      "all": [
+        [
+          "play"
+        ]
+      ]
+    },
+    {
+      "id": "greet",
+      "all": [
+        [
+          "hello"
+        ]
+      ]
+    },
+    {
+      "id": "thanks",
+      "all": [
+        [
+          "thanks"
+        ]
+      ]
+    }
+  ],
+  "polite": [
+    "please",
+    "politeask",
+    "thanks"
+  ],
+  "rude": [
+    "rudeword",
+    "now"
+  ]
+}

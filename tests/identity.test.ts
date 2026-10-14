@@ -3,7 +3,7 @@ import { cleanName, generateIdentity, NAMES, type Identity } from '../src/sim/id
 import { createSim, DAY_MS, HOUR_MS, step } from '../src/sim/sim';
 import { world } from './helpers';
 
-const LEISURE = ['piano', 'read', 'tv'] as const;
+const LEISURE = ['piano', 'music', 'read', 'tv'] as const;
 
 interface Habits {
   /** Share of leisure time slots going to each pastime. */
@@ -116,13 +116,15 @@ describe('traits drive behaviour', () => {
     ...structuredClone(base),
     quirks: ['hummer'],
     ...patch,
-    traits: { musical: 0.5, bookish: 0.5, telly: 0.5, tidy: 0.5, ...traits },
+    traits: { musical: 0.5, bookish: 0.5, telly: 0.5, tidy: 0.5, sociable: 0.5, ...traits },
   });
 
-  it('a musical person plays the piano far more than an unmusical one', () => {
+  it('a musical person plays the piano and records far more than an unmusical one', () => {
     const musical = habits(7, 6, withTraits({}, { musical: 1 }));
     const tuneless = habits(7, 6, withTraits({}, { musical: 0 }));
-    expect(musical.leisure.piano).toBeGreaterThan(tuneless.leisure.piano * 2);
+    const share = (h: Habits) => h.leisure.piano + h.leisure.music;
+    expect(share(musical)).toBeGreaterThan(share(tuneless) * 1.5);
+    expect(musical.leisure.piano).toBeGreaterThan(tuneless.leisure.piano * 1.5);
   });
 
   it('a bookworm reads more and a couch potato watches more TV', () => {

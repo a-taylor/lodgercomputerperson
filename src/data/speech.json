@@ -1,0 +1,358 @@
+{
+  "comply": [
+    "Okay!",
+    "Sure thing.",
+    "Alright, {player}.",
+    "Good idea.",
+    "If you like.",
+    "Why not?",
+    "Righto.",
+    "Happy to."
+  ],
+  "comply.polite": [
+    "Since you asked so nicely!",
+    "Of course, {player}.",
+    "With pleasure.",
+    "For you? Gladly."
+  ],
+  "comply.piano": [
+    "I've been practising!",
+    "One tune, coming up.",
+    "Let me warm up my fingers.",
+    "Any requests? Never mind, I'll pick."
+  ],
+  "comply.music": [
+    "Let's put a record on.",
+    "Time for some {genre}.",
+    "I know just the one."
+  ],
+  "comply.tv": [
+    "Let's see what's on.",
+    "I could do with some telly.",
+    "There might be a film on."
+  ],
+  "comply.read": [
+    "I was halfway through a good one.",
+    "A bit of reading sounds nice.",
+    "Where did I leave my bookmark?"
+  ],
+  "comply.dance": [
+    "Watch these moves!",
+    "Don't laugh.",
+    "I've got rhythm. Mostly."
+  ],
+  "comply.exercise": [
+    "Better stretch first.",
+    "Ten press-ups. Maybe five.",
+    "Feel the burn!"
+  ],
+  "comply.eat": [
+    "I could eat.",
+    "Now you mention it, I'm peckish.",
+    "Maybe some {food}."
+  ],
+  "comply.drink": [
+    "A glass of water, then.",
+    "Good thinking, I'm parched."
+  ],
+  "comply.sleep": [
+    "I am pretty tired.",
+    "Night night, {player}.",
+    "Early night, then."
+  ],
+  "comply.wash": [
+    "Fair enough, I'm a bit whiffy.",
+    "Bath time!",
+    "Rub-a-dub."
+  ],
+  "comply.feedDog": [
+    "Dinner time, {dog}!",
+    "{dog} will love you for that.",
+    "Come on, {dog}!"
+  ],
+  "comply.goTo": [
+    "On my way.",
+    "Okay, okay, I'm going.",
+    "Right you are."
+  ],
+  "defer": [
+    "Let me finish {current} first.",
+    "In a minute, I'm {current}.",
+    "After this, I promise.",
+    "Just finishing {current}."
+  ],
+  "deferDone": [
+    "Right, as promised.",
+    "Okay, now for that.",
+    "I didn't forget!"
+  ],
+  "refuse.tired": [
+    "I'm too tired.",
+    "Maybe later, I'm worn out.",
+    "I can barely keep my eyes open.",
+    "Not now, I'm exhausted."
+  ],
+  "refuse.hungry": [
+    "I'm starving, maybe after I eat.",
+    "Not on an empty stomach.",
+    "Food first, then we'll see."
+  ],
+  "refuse.thirsty": [
+    "I'm parched. Water first.",
+    "Can I get a drink first?"
+  ],
+  "refuse.justDid": [
+    "I just did that!",
+    "Again? I only just finished.",
+    "Give me a break, I just did that."
+  ],
+  "refuse.dislike": [
+    "I'm not really a {activity} person.",
+    "Not my thing, sorry.",
+    "I'd rather not, honestly."
+  ],
+  "refuse.rude": [
+    "Say please.",
+    "Not when you ask like that.",
+    "Manners, {player}!",
+    "Ask nicely and I might."
+  ],
+  "refuse.mood": [
+    "I don't feel like it.",
+    "I'm not in the mood.",
+    "Leave me alone for a bit.",
+    "Not today."
+  ],
+  "refuse.whim": [
+    "Nah, not right now.",
+    "Maybe later.",
+    "Hmm, no, I don't think so.",
+    "I'll pass."
+  ],
+  "refuse.noFood": [
+    "There's no food left!",
+    "The fridge is empty, {player}."
+  ],
+  "refuse.noWater": [
+    "We're out of water.",
+    "There's nothing to drink!"
+  ],
+  "refuse.noDogFood": [
+    "There's no dog food left.",
+    "{dog}'s food has run out."
+  ],
+  "refuse.noRecords": [
+    "I haven't got any records.",
+    "I'd need a record for that."
+  ],
+  "refuse.notTired": [
+    "I'm not sleepy.",
+    "Bed? It's far too early.",
+    "I'm wide awake!"
+  ],
+  "refuse.full": [
+    "I'm stuffed.",
+    "I couldn't eat another thing."
+  ],
+  "refuse.notThirsty": [
+    "I'm not thirsty.",
+    "I've had plenty, thanks."
+  ],
+  "refuse.clean": [
+    "I'm already squeaky clean.",
+    "I just washed!"
+  ],
+  "refuse.dogFull": [
+    "{dog} has already eaten.",
+    "{dog}'s bowl is full."
+  ],
+  "refuse.already": [
+    "I'm already doing that!",
+    "What do you think I'm doing?"
+  ],
+  "asleep": [
+    "Zzz...",
+    "Mmmf... zzz...",
+    "*snore*"
+  ],
+  "wake.yes": [
+    "Mmh... alright, I'm up.",
+    "Is it morning already?",
+    "Okay, okay, I'm awake."
+  ],
+  "wake.no": [
+    "Five more minutes...",
+    "Go away... zzz...",
+    "Mmmf. No."
+  ],
+  "pat": [
+    "Hee hee!",
+    "That's nice.",
+    "Aww.",
+    "Ooh, I like that.",
+    "You're the best, {player}."
+  ],
+  "pat.enough": [
+    "Okay, okay, that's enough!",
+    "My hair!",
+    "Alright, you've made your point."
+  ],
+  "pat.woken": [
+    "Huh? I was asleep!",
+    "Wha... who's there?"
+  ],
+  "deliver.food": [
+    "Food! Thank you!",
+    "Ooh, groceries.",
+    "The fridge is looking better."
+  ],
+  "deliver.water": [
+    "Water, lovely.",
+    "Thanks, I was getting thirsty."
+  ],
+  "deliver.dogFood": [
+    "{dog}, look what we've got!",
+    "Dog food! {dog} says thanks."
+  ],
+  "deliver.record": [
+    "A new record!",
+    "Ooh, some {genre}.",
+    "I'll give this a spin."
+  ],
+  "deliver.recordFavourite": [
+    "{genre}! My favourite!",
+    "How did you know I love {genre}?",
+    "Brilliant, more {genre}!"
+  ],
+  "deliver.book": [
+    "A new book!",
+    "Something to read, thanks!",
+    "I'll start this tonight."
+  ],
+  "deliver.full": [
+    "There's no room for any more.",
+    "The cupboards are full, {player}."
+  ],
+  "phone.answer": [
+    "Hello? Oh, hi!",
+    "I'll get it!",
+    "Who could that be?"
+  ],
+  "phone.ignore": [
+    "Let it ring.",
+    "Not now, phone.",
+    "Whoever it is can call back."
+  ],
+  "phone.woken": [
+    "Who's calling at this hour?",
+    "Hello? Do you know what time it is?"
+  ],
+  "alarm.woken": [
+    "Morning already?",
+    "Good morning, {player}!",
+    "Up and at 'em."
+  ],
+  "alarm.grumpy": [
+    "Was that really necessary?",
+    "Ugh. Alarm clocks.",
+    "I was having a lovely dream."
+  ],
+  "alarm.awake": [
+    "Why's the alarm going off?",
+    "I'm already up, you know."
+  ],
+  "knock.hello": [
+    "Hello? Is anyone out there?",
+    "Hi! I'm {name}. Who are you?",
+    "Hello in there! Out there? Hello!"
+  ],
+  "knock.food": [
+    "We're nearly out of food.",
+    "The fridge is almost empty, {player}.",
+    "Could you get some food in?"
+  ],
+  "knock.water": [
+    "We're running out of water.",
+    "Could I have some more water?"
+  ],
+  "knock.dogFood": [
+    "{dog} needs more food.",
+    "We're nearly out of dog food."
+  ],
+  "knock.lonely": [
+    "Are you still there?",
+    "It's quiet without you, {player}.",
+    "Knock knock! Just saying hello."
+  ],
+  "knock.record": [
+    "I'd love a new record.",
+    "I've played this record to death.",
+    "Any chance of some new music?"
+  ],
+  "greet": [
+    "Hello, {player}!",
+    "Hi there!",
+    "Oh, hello!",
+    "Hey, {player}."
+  ],
+  "thanks": [
+    "You're welcome.",
+    "No problem.",
+    "Any time."
+  ],
+  "howAreYou.good": [
+    "I'm great, thanks!",
+    "Never better.",
+    "Pretty good, actually."
+  ],
+  "howAreYou.ok": [
+    "Not bad.",
+    "I'm alright.",
+    "Could be worse."
+  ],
+  "howAreYou.bad": [
+    "Not great, honestly.",
+    "I've had better days.",
+    "Pretty rotten, to be honest."
+  ],
+  "howAreYou.need.food": [
+    "A bit hungry, actually.",
+    "My tummy's rumbling."
+  ],
+  "howAreYou.need.water": [
+    "I'm really thirsty."
+  ],
+  "howAreYou.need.energy": [
+    "Very sleepy."
+  ],
+  "howAreYou.need.hygiene": [
+    "I could do with a wash."
+  ],
+  "howAreYou.need.fun": [
+    "Bored, mostly."
+  ],
+  "name.learned": [
+    "Nice to meet you, {player}!",
+    "{player}! What a lovely name.",
+    "Hello, {player}. I'm {name}."
+  ],
+  "notYet.letter": [
+    "My typewriter ribbon's dried up. Maybe soon.",
+    "I'm not much of a letter writer yet."
+  ],
+  "notYet.game": [
+    "I don't know any games yet.",
+    "I'll have to learn some games first."
+  ],
+  "confused": [
+    "Hmm?",
+    "Sorry, I didn't catch that.",
+    "What do you mean?",
+    "Pardon?",
+    "Eh?"
+  ],
+  "playWhat": [
+    "Play what?",
+    "Play what, the piano?"
+  ]
+}

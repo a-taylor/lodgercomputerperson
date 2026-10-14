@@ -2,6 +2,18 @@
 import { hourWeight, inHours, type ActivityDef, type StepDef } from './activities';
 import { createDog, stepDog, BOWL, type DogState } from './dog';
 import { cleanName, generateIdentity, traitAffinity, type Identity } from './identity';
+import {
+  deliver,
+  handleSay,
+  noveltyBoost,
+  pat,
+  ringPhone,
+  soundAlarm,
+  takePending,
+  wantsAttention,
+  type DeliveryItem,
+  type KnockReason,
+} from './interactions';
 import { createMoveIn, DEFAULT_EMPTY_TICKS, FRONT_DOOR, movedIn, stepMoveIn, type MoveInState } from './moveIn';
 import { placeAt, routeFromHere, walk, type Mover } from './movement';
 import {
@@ -19,13 +31,13 @@ import {
   type Needs,
 } from './needs';
 import { createRng, nextFloat, nextInt, pick, type Rng } from './rng';
+import { say, type SpeechLogEntry, type SpeechState } from './speech';
+import { hasRequirement, startingSupplies, type Supplies } from './supplies';
 import type { World } from './world';
 
-/** Real milliseconds per tick. Walking speed is per tick, so he walks at the same pace at any time scale. */
-export const TICK_MS = 50;
-export const MINUTE_MS = 60_000;
-export const HOUR_MS = 60 * MINUTE_MS;
-export const DAY_MS = 24 * HOUR_MS;
+import { DAY_MS, HOUR_MS, MINUTE_MS, TICK_MS } from './time';
+
+export { DAY_MS, HOUR_MS, MINUTE_MS, TICK_MS };
 
 const WINDOW = 'study.window';
 /** Activities scoring at least this fraction of the best are in the running. */
@@ -42,6 +54,8 @@ export interface ActivityRun {
   doing: boolean;
   remainingMs: number;
   startedMs: number;
+  /** Why he's knocking, for a knock. */
+  reason?: KnockReason;
 }
 
 export interface PersonState extends Mover {
@@ -74,12 +88,35 @@ export interface SimState {
   playerName: string | null;
   /** Game time each activity last finished. */
   lastDone: Record<string, number>;
+  supplies: Supplies;
+  /** What he's saying now, if anything. */
+  speech: SpeechState | null;
+  speechLog: SpeechLogEntry[];
+  /** Recently used line templates, so he doesn't repeat himself. */
+  recentLines: string[];
+  /** The latest knock on the glass, for the UI to shake and caption. */
+  knock: { seq: number; reason: KnockReason; tick: number } | null;
+  lastKnockMs: number | null;
+  /** Something he agreed to do once he's finished what he's doing. */
+  pending: { activity: string; node: string | null; untilMs: number } | null;
+  /** Game time the player last did anything. */
+  lastInteractionMs: number | null;
+  /** Game times of recent pats on the head. */
+  pats: number[];
+  /** The phone is ringing until this tick. */
+  phoneRing: { untilTick: number } | null;
 }
 
 export type Command =
   | { type: 'goTo'; node: string }
   /** The player says who they are, and may rename him. */
-  | { type: 'introduce'; playerName?: string; tenantName?: string };
+  | { type: 'introduce'; playerName?: string; tenantName?: string }
+  /** Typed text. */
+  | { type: 'say'; text: string }
+  | { type: 'deliver'; item: DeliveryItem }
+  | { type: 'pat' }
+  | { type: 'phone' }
+  | { type: 'alarm' };
 
 export interface SimOptions {
   /** Minute of day the clock starts at. Default 08:00. */
@@ -130,6 +167,16 @@ export function createSim(world: World, seed: number, options: SimOptions = {}):
     dog,
     playerName: null,
     lastDone: {},
+    supplies: startingSupplies(identity.favouriteMusic),
+    speech: null,
+    speechLog: [],
+    recentLines: [],
+    knock: null,
+    lastKnockMs: null,
+    pending: null,
+    lastInteractionMs: null,
+    pats: [],
+    phoneRing: null,
   };
 }
 
@@ -181,9 +228,25 @@ export function run(state: SimState, world: World, ticks: number): void {
 }
 
 function applyCommand(state: SimState, world: World, cmd: Command): void {
+  if (!state.person.alive && cmd.type !== 'introduce') return;
   switch (cmd.type) {
     case 'goTo':
-      if (state.person.alive && world.house.nodes.has(cmd.node)) startActivity(state, world, 'potter', cmd.node);
+      if (world.house.nodes.has(cmd.node)) startActivity(state, world, 'potter', cmd.node);
+      return;
+    case 'say':
+      handleSay(state, world, cmd.text);
+      return;
+    case 'deliver':
+      deliver(state, world, cmd.item);
+      return;
+    case 'pat':
+      pat(state, world);
+      return;
+    case 'phone':
+      ringPhone(state, world);
+      return;
+    case 'alarm':
+      soundAlarm(state, world);
       return;
     case 'introduce': {
       const player = cmd.playerName === undefined ? null : cleanName(cmd.playerName);
@@ -200,8 +263,10 @@ export function scoreActivities(state: SimState, world: World): { id: string; sc
   const hour = bodyHour(state);
   const { identity } = state.person;
   const snacker = identity.quirks.includes('nightSnacker');
+  const want = wantsAttention(state);
   return world.activities.list.map((def) => {
-    let score = def.base ?? 0;
+    if (!isAvailable(state, def)) return { id: def.id, score: 0, offHours: true };
+    let score = def.id === 'knock' ? (want?.score ?? 0) : (def.base ?? 0);
     for (const [key, gain] of Object.entries(def.adverts) as [EffectKey, number][]) {
       score += (gain / 100) * urgency(effectValue(state, key));
     }
@@ -210,6 +275,7 @@ export function scoreActivities(state: SimState, world: World): { id: string; sc
     const offHours = weight < OFF_HOURS;
     score *= weight;
     if (def.trait) score *= traitAffinity(identity.traits, def.trait);
+    score *= noveltyBoost(state, def);
     const last = state.lastDone[def.id];
     if (def.cooldownMinutes && last !== undefined && state.clock.ms - last < def.cooldownMinutes * MINUTE_MS) {
       score *= 0.3;
@@ -247,10 +313,32 @@ function chooseActivity(state: SimState, world: World): void {
   startActivity(state, world, chosen);
 }
 
-function startActivity(state: SimState, world: World, id: string, forcedNode?: string): void {
+/** Whether he could do this now: he has what it needs, and it's something he'd do unprompted (or was asked). */
+export function isAvailable(state: SimState, def: ActivityDef, requested = false): boolean {
+  if (def.autonomous === false && !requested) return false;
+  return (def.requires ?? []).every((r) => hasRequirement(state.supplies, r));
+}
+
+export function startActivity(state: SimState, world: World, id: string, forcedNode?: string): void {
   const p = state.person;
+  const def = world.activities.byId.get(id)!;
+  if (def.consumes) state.supplies[def.consumes] = Math.max(0, state.supplies[def.consumes] - 1);
   p.activity = { id, step: 0, node: '', doing: false, remainingMs: 0, startedMs: state.clock.ms };
+  if (id === 'knock') p.activity.reason = wantsAttention(state)?.reason ?? 'lonely';
   beginWalkToStep(state, world, forcedNode);
+}
+
+/** Ends whatever he's doing. Counts as done if `finished` (woken up after sleeping still counts as sleep). */
+export function stopActivity(state: SimState, world: World, finished: boolean): void {
+  const run = state.person.activity;
+  if (!run) return;
+  if (finished) state.lastDone[run.id] = state.clock.ms;
+  state.person.activity = null;
+  state.person.path = [];
+  // Back on his feet where he was.
+  const at = world.house.nodes.get(state.person.at)!;
+  state.person.x = at.x;
+  state.person.y = at.y;
 }
 
 function beginWalkToStep(state: SimState, world: World, forcedNode?: string): void {
@@ -264,8 +352,9 @@ function beginWalkToStep(state: SimState, world: World, forcedNode?: string): vo
 }
 
 function resolveNode(state: SimState, world: World, node: string): string {
-  if (node !== '*') return node;
   const p = state.person;
+  if (node === 'here') return p.at;
+  if (node !== '*') return node;
   if (p.identity.quirks.includes('windowGazer') && p.at !== WINDOW && nextFloat(state.rng) < 0.4) return WINDOW;
   return pick(state.rng, world.house.nodeIds.filter((id) => id !== p.at));
 }
@@ -284,6 +373,7 @@ function advanceActivity(state: SimState, world: World): void {
     let minutes = nextInt(state.rng, stepDef.minutes[0], stepDef.minutes[1]);
     if (def.kind === 'idle' && p.identity.quirks.includes('fidget')) minutes = Math.max(1, Math.round(minutes / 2));
     run.remainingMs = minutes * MINUTE_MS;
+    if (def.id === 'knock') knockOnGlass(state, run.reason ?? 'lonely');
     return;
   }
 
@@ -303,13 +393,20 @@ function advanceActivity(state: SimState, world: World): void {
     run.step++;
     beginWalkToStep(state, world);
   } else {
-    finishActivity(state, def);
+    finishActivity(state, world, def);
   }
 }
 
-function finishActivity(state: SimState, def: ActivityDef): void {
+function finishActivity(state: SimState, world: World, def: ActivityDef): void {
   state.lastDone[def.id] = state.clock.ms;
   state.person.activity = null;
+  takePending(state, world);
+}
+
+function knockOnGlass(state: SimState, reason: KnockReason): void {
+  state.knock = { seq: (state.knock?.seq ?? 0) + 1, reason, tick: state.tick };
+  state.lastKnockMs = state.clock.ms;
+  say(state, `knock.${reason}`);
 }
 
 function updateBody(state: SimState, world: World): void {
@@ -363,7 +460,7 @@ function mostCriticalNeed(state: SimState, world: World): NeedId | null {
   for (const id of CRITICAL_NEEDS) {
     const v = state.person.needs[id];
     if (v >= CRITICAL || (worst && v >= state.person.needs[worst])) continue;
-    if (world.activities.list.some((a) => serves(a, id))) worst = id;
+    if (world.activities.list.some((a) => serves(a, id) && isAvailable(state, a))) worst = id;
   }
   return worst;
 }

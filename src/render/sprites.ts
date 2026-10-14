@@ -42,10 +42,12 @@ export function drawFigure(ctx: CanvasRenderingContext2D, look: Look, pose: Figu
   }
 
   const sitting = pose.pose === 'sit';
+  const dancing = pose.pose === 'dance';
+  const bounce = dancing && Math.floor(pose.tick / 5) % 2 === 0 ? 1 : 0;
   const legs = sitting ? 0 : 6 + Math.min(look.tall, 2);
-  const torsoTop = y - legs - 7 - (look.tall > 2 ? 1 : 0) - (sitting ? 3 : 0);
+  const torsoTop = y - legs - 7 - (look.tall > 2 ? 1 : 0) - (sitting ? 3 : 0) - bounce;
   const headTop = torsoTop - 5;
-  const stride = pose.walking ? Math.floor(pose.tick / 4) % 2 : 0;
+  const stride = pose.walking || dancing ? Math.floor(pose.tick / (dancing ? 5 : 4)) % 2 : 0;
   const front = pose.facing === 1 ? 1 : -1;
 
   ctx.fillStyle = look.trousers;
@@ -58,6 +60,16 @@ export function drawFigure(ctx: CanvasRenderingContext2D, look: Look, pose: Figu
   }
   ctx.fillStyle = look.shirt;
   ctx.fillRect(x - 3, torsoTop, 7, y - torsoTop - (sitting ? 6 : legs));
+  if (dancing) {
+    // Arms up, waving in time.
+    ctx.fillRect(stride ? x - 5 : x - 4, torsoTop - 3, 1, 4);
+    ctx.fillRect(stride ? x + 4 : x + 5, torsoTop - 3, 1, 4);
+  } else if (pose.pose === 'knock') {
+    // Fist raised to the glass, knuckles towards you.
+    ctx.fillRect(x + front * 4, torsoTop - 2, 1, 4);
+    ctx.fillStyle = look.skin;
+    ctx.fillRect(x + front * 4 - (front === 1 ? 0 : 1), torsoTop - 4, 2, 2);
+  }
 
   ctx.fillStyle = look.skin;
   ctx.fillRect(x - 2, headTop, 5, 5);

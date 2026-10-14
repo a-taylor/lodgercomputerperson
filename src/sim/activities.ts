@@ -3,12 +3,13 @@
 import type { House } from './house';
 import { TRAIT_IDS, type TraitId } from './identity';
 import { EFFECT_KEYS, type EffectKey } from './needs';
+import { REQUIREMENT_IDS, SUPPLY_IDS, type RequirementId, type SupplyId } from './supplies';
 
-export type Pose = 'stand' | 'sit' | 'lie';
+export type Pose = 'stand' | 'sit' | 'lie' | 'dance' | 'knock';
 export type Effects = Partial<Record<EffectKey, number>>;
 
 export interface StepDef {
-  /** Node to do this step at, or "*" for anywhere. */
+  /** Node to do this step at, "*" for anywhere, or "here" for wherever he is. */
   node: string;
   minutes: [number, number];
   label: string;
@@ -23,7 +24,13 @@ export interface StepDef {
 export interface ActivityDef {
   id: string;
   label: string;
-  kind?: 'need' | 'leisure' | 'idle';
+  kind?: 'need' | 'leisure' | 'idle' | 'social';
+  /** False for things he only does when asked or prompted (answering the phone). Default true. */
+  autonomous?: boolean;
+  /** Needs at least one of these in the house. */
+  requires?: RequirementId[];
+  /** Uses up one of these when he starts. */
+  consumes?: SupplyId;
   /** Flat appeal regardless of needs. */
   base?: number;
   /** How much each need expects to gain, 0-100. Drives utility. */
@@ -49,11 +56,15 @@ export function buildActivities(defs: ActivityDef[], house: House): ActivityLibr
     if (a.steps.length === 0) throw new Error(`Activity "${a.id}" has no steps`);
     for (const key of Object.keys(a.adverts)) checkKey(a.id, key);
     if (a.trait !== undefined && !TRAIT_IDS.includes(a.trait)) throw new Error(`Activity "${a.id}" uses unknown trait "${a.trait}"`);
+    for (const r of a.requires ?? []) {
+      if (!REQUIREMENT_IDS.includes(r)) throw new Error(`Activity "${a.id}" requires unknown "${r}"`);
+    }
+    if (a.consumes !== undefined && !SUPPLY_IDS.includes(a.consumes)) throw new Error(`Activity "${a.id}" consumes unknown "${a.consumes}"`);
     for (const [from, to] of a.hours ?? []) {
       if (from < 0 || from > 23 || to < 0 || to > 24) throw new Error(`Activity "${a.id}" has bad hours`);
     }
     for (const s of a.steps) {
-      if (s.node !== '*' && !house.nodes.has(s.node)) throw new Error(`Activity "${a.id}" uses unknown node "${s.node}"`);
+      if (s.node !== '*' && s.node !== 'here' && !house.nodes.has(s.node)) throw new Error(`Activity "${a.id}" uses unknown node "${s.node}"`);
       if (s.minutes[0] <= 0 || s.minutes[1] < s.minutes[0]) throw new Error(`Activity "${a.id}" has bad minutes`);
       for (const key of Object.keys(s.rates ?? {})) checkKey(a.id, key);
       if (s.until) checkKey(a.id, s.until.key);

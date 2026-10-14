@@ -26,6 +26,8 @@ export interface Traits {
   bookish: number;
   telly: number;
   tidy: number;
+  /** Answers the phone gladly and gets lonely without company. */
+  sociable: number;
 }
 
 export interface Identity {
@@ -52,7 +54,7 @@ export interface DogIdentity {
 }
 
 export type TraitId = keyof Traits;
-export const TRAIT_IDS: readonly TraitId[] = ['musical', 'bookish', 'telly', 'tidy'];
+export const TRAIT_IDS: readonly TraitId[] = ['musical', 'bookish', 'telly', 'tidy', 'sociable'];
 
 const data = identityJson as {
   names: string[];
@@ -104,7 +106,8 @@ export function generateIdentity(seed: number): { person: Identity; dog: DogIden
       trousers: pick(rng, data.trousers),
       tall: nextInt(rng, 0, 3),
     },
-    traits: { musical: trait(rng), bookish: trait(rng), telly: trait(rng), tidy: trait(rng) },
+    // sociable is drawn last, below, so adding it left every existing tenant unchanged.
+    traits: { musical: trait(rng), bookish: trait(rng), telly: trait(rng), tidy: trait(rng), sociable: 0 },
     chronotype: between(rng, -1.5, 1.5),
     appetite: between(rng, 0.85, 1.2),
     pace: between(rng, 0.8, 1.25),
@@ -119,6 +122,7 @@ export function generateIdentity(seed: number): { person: Identity; dog: DogIden
     ears: pick(rng, data.dogEars),
     spots: nextFloat(rng) < 0.3,
   };
+  person.traits.sociable = trait(rng);
   return { person, dog };
 }
 

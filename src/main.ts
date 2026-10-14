@@ -1,5 +1,6 @@
 import { drawHouse } from './render/canvas';
 import { drawDog, drawFigure } from './render/sprites';
+import type { DeliveryItem } from './sim/interactions';
 import { NEED_IDS } from './sim/needs';
 import { createSim, currentStep, DAY_MS, HOUR_MS, isAsleep, step, TICK_MS, type Command } from './sim/sim';
 import { defaultWorld } from './sim/world';
@@ -29,53 +30,104 @@ const sim = createSim(world, seed, {
   emptyTicks: params.has('quick') ? 60 : undefined,
 });
 
-const canvas = document.querySelector<HTMLCanvasElement>('#house')!;
-const status = document.querySelector<HTMLParagraphElement>('#status')!;
-const debug = document.querySelector<HTMLPreElement>('#debug')!;
-const intro = document.querySelector<HTMLFormElement>('#intro')!;
-const introText = document.querySelector<HTMLParagraphElement>('#intro-text')!;
-const playerInput = document.querySelector<HTMLInputElement>('#player-name')!;
-const tenantInput = document.querySelector<HTMLInputElement>('#tenant-name')!;
+const $ = <T extends HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
+const canvas = $<HTMLCanvasElement>('#house');
+const stage = $<HTMLDivElement>('#stage');
+const bubble = $<HTMLDivElement>('#bubble');
+const caption = $<HTMLDivElement>('#caption');
+const status = $<HTMLParagraphElement>('#status');
+const speechLog = $<HTMLDivElement>('#speech-log');
+const debug = $<HTMLPreElement>('#debug');
+const intro = $<HTMLFormElement>('#intro');
+const introText = $<HTMLParagraphElement>('#intro-text');
+const playerInput = $<HTMLInputElement>('#player-name');
+const tenantInput = $<HTMLInputElement>('#tenant-name');
+const talk = $<HTMLFormElement>('#talk');
+const talkInput = $<HTMLInputElement>('#talk-input');
+const actions = $<HTMLDivElement>('#actions');
+const suppliesLine = $<HTMLParagraphElement>('#supplies');
 const ctx = canvas.getContext('2d')!;
 const { width, height } = house.def.size;
 
 let showGraph = false;
 let introDismissed = false;
+let scale = 1;
 const pending: Command[] = [];
 
 function fitCanvas(): void {
-  const scale = Math.max(1, Math.floor(Math.min((innerWidth - 32) / width, (innerHeight - 180) / height)));
+  scale = Math.max(1, Math.floor(Math.min((innerWidth - 32) / width, (innerHeight - 260) / height)));
   canvas.style.width = `${width * scale}px`;
   canvas.style.height = `${height * scale}px`;
 }
 addEventListener('resize', fitCanvas);
 fitCanvas();
 
-addEventListener('keydown', (e) => {
-  if (e.target instanceof HTMLInputElement) return;
-  if (e.key === 'g' || e.key === 'G') showGraph = !showGraph;
-  if (e.key === 'd' || e.key === 'D') debug.hidden = !debug.hidden;
+const movedIn = () => sim.moveIn.stage === 'done';
+
+function send(cmd: Command): void {
+  if (movedIn()) pending.push(cmd);
+}
+
+function commandFrom(spec: string): Command {
+  const [type, item] = spec.split(':');
+  if (type === 'deliver') return { type: 'deliver', item: item as DeliveryItem };
+  return { type: type as 'pat' | 'phone' | 'alarm' };
+}
+
+actions.addEventListener('click', (e) => {
+  const button = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-command]');
+  if (button) send(commandFrom(button.dataset.command!));
 });
 
+// Alt+letter shortcuts, by physical key so they work whatever Alt types on a Mac.
+const SHORTCUTS: Record<string, string> = {
+  KeyF: 'deliver:food',
+  KeyW: 'deliver:water',
+  KeyD: 'deliver:dogFood',
+  KeyR: 'deliver:record',
+  KeyB: 'deliver:book',
+  KeyT: 'pat',
+  KeyP: 'phone',
+  KeyA: 'alarm',
+};
+addEventListener('keydown', (e) => {
+  if (!e.altKey) return;
+  const spec = SHORTCUTS[e.code];
+  if (spec) {
+    e.preventDefault();
+    send(commandFrom(spec));
+  } else if (e.code === 'KeyN') {
+    e.preventDefault();
+    debug.hidden = !debug.hidden;
+  } else if (e.code === 'KeyG') {
+    e.preventDefault();
+    showGraph = !showGraph;
+  }
+});
+
+talk.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const text = talkInput.value.trim();
+  if (!text) return;
+  send({ type: 'say', text });
+  talkInput.value = '';
+});
+
+/** Clicking on him is a pat on the head. */
 canvas.addEventListener('click', (e) => {
-  if (sim.moveIn.stage !== 'done') return;
+  const p = sim.person;
+  if (!p.present) return;
   const rect = canvas.getBoundingClientRect();
   const x = ((e.clientX - rect.left) / rect.width) * width;
   const y = ((e.clientY - rect.top) / rect.height) * height;
-  // Pick the nearest node on the floor that was clicked.
-  const floor = house.def.floors.find((f) => y <= f.floorY + 4 && y > f.ceilingY);
-  if (!floor) return;
-  let best: string | undefined;
-  let bestDist = Infinity;
-  for (const node of house.nodes.values()) {
-    if (node.floor !== floor.id) continue;
-    const d = Math.abs(node.x - x);
-    if (d < bestDist) {
-      bestDist = d;
-      best = node.id;
-    }
-  }
-  if (best) pending.push({ type: 'goTo', node: best });
+  if (Math.abs(x - p.x) <= 7 && y <= p.y + 2 && y >= p.y - 24) send({ type: 'pat' });
+});
+canvas.addEventListener('mousemove', (e) => {
+  const p = sim.person;
+  const rect = canvas.getBoundingClientRect();
+  const x = ((e.clientX - rect.left) / rect.width) * width;
+  const y = ((e.clientY - rect.top) / rect.height) * height;
+  canvas.style.cursor = p.present && Math.abs(x - p.x) <= 7 && y <= p.y + 2 && y >= p.y - 24 ? 'pointer' : 'default';
 });
 
 intro.addEventListener('submit', (e) => {
@@ -83,6 +135,7 @@ intro.addEventListener('submit', (e) => {
   pending.push({ type: 'introduce', playerName: playerInput.value, tenantName: tenantInput.value });
   introDismissed = true;
   intro.hidden = true;
+  talkInput.focus();
 });
 
 function clockText(ms: number): string {
@@ -122,6 +175,53 @@ function showIntro(): void {
   playerInput.focus();
 }
 
+let lastSpeechSeq = 0;
+let lastKnockSeq = 0;
+let captionUntil = 0;
+
+function updateOverlays(px: number, py: number): void {
+  const speech = sim.speech;
+  if (speech && speech.seq !== lastSpeechSeq) {
+    lastSpeechSeq = speech.seq;
+    bubble.textContent = speech.text;
+    const line = document.createElement('p');
+    line.textContent = `${sim.person.identity.name}: ${speech.text}`;
+    speechLog.append(line);
+    while (speechLog.childElementCount > 5) speechLog.firstElementChild!.remove();
+  }
+  const talking = speech !== null && sim.tick < speech.untilTick && sim.person.present;
+  bubble.hidden = !talking;
+  if (talking) {
+    bubble.style.left = `${px * scale}px`;
+    bubble.style.top = `${(py - 26) * scale}px`;
+  }
+
+  const knock = sim.knock;
+  if (knock && knock.seq !== lastKnockSeq) {
+    lastKnockSeq = knock.seq;
+    stage.classList.remove('knocking');
+    void stage.offsetWidth; // restart the animation
+    stage.classList.add('knocking');
+    caption.textContent = '*knock knock*';
+    captionUntil = sim.tick + 60;
+  }
+  if (sim.phoneRing && sim.tick < sim.phoneRing.untilTick) {
+    caption.textContent = '*ring ring*';
+    captionUntil = Math.max(captionUntil, sim.tick + 2);
+  }
+  caption.hidden = sim.tick >= captionUntil;
+}
+
+function updateControls(): void {
+  const ready = movedIn() && sim.person.alive;
+  for (const el of [...actions.querySelectorAll('button'), talkInput, talk.querySelector('button')!]) {
+    (el as HTMLButtonElement | HTMLInputElement).disabled = !ready;
+  }
+  const s = sim.supplies;
+  const text = `Fridge: ${s.food} meals, ${s.water} water · Dog food: ${s.dogFood} · ${s.records.length} record${s.records.length === 1 ? '' : 's'} · ${s.books} book${s.books === 1 ? '' : 's'}`;
+  if (suppliesLine.textContent !== text) suppliesLine.textContent = text;
+}
+
 // Fixed-timestep loop: the sim only ever advances in whole ticks; rendering interpolates.
 let last = performance.now();
 let acc = 0;
@@ -141,6 +241,8 @@ function frame(now: number): void {
   const alpha = acc / TICK_MS;
   const lerp = (a: number, b: number) => a + (b - a) * alpha;
   const { person: p, dog } = sim;
+  const px = lerp(prev.x, p.x);
+  const py = lerp(prev.y, p.y);
 
   ctx.imageSmoothingEnabled = false;
   drawHouse(ctx, house, (sim.clock.ms % DAY_MS) / HOUR_MS, showGraph);
@@ -149,8 +251,8 @@ function frame(now: number): void {
   }
   if (p.present && p.alive) {
     drawFigure(ctx, p.identity.look, {
-      x: lerp(prev.x, p.x),
-      y: lerp(prev.y, p.y),
+      x: px,
+      y: py,
       facing: p.facing,
       walking: p.path.length > 0,
       pose: p.activity?.doing ? (currentStep(sim, world)?.pose ?? 'stand') : 'stand',
@@ -160,8 +262,11 @@ function frame(now: number): void {
       tick: sim.tick,
     });
   }
+  updateOverlays(px, py);
+  updateControls();
 
-  if (sim.moveIn.stage === 'done' && sim.playerName === null && !introDismissed && intro.hidden) showIntro();
+  if (sim.playerName !== null && !intro.hidden) intro.hidden = true;
+  if (movedIn() && sim.playerName === null && !introDismissed && intro.hidden && sim.knock) showIntro();
 
   // Only touch the live region when the text changes, not every frame.
   const text = `${clockText(sim.clock.ms)} · ${describe()}`;
@@ -179,7 +284,7 @@ function frame(now: number): void {
       `${id.name}: ${Object.entries(id.traits).map(([k, v]) => `${k} ${v.toFixed(2)}`).join(', ')}`,
       `body clock ${id.chronotype > 0 ? '+' : ''}${id.chronotype.toFixed(1)}h, pace ${id.pace}, appetite ${id.appetite}`,
       `quirks: ${id.quirks.join(', ')} · likes ${id.favouriteMusic} and ${id.favouriteFood}`,
-      `dog: ${dog.identity.name}, ${dog.identity.size}`,
+      `dog: ${dog.identity.name}, ${dog.identity.size} · records: ${sim.supplies.records.join(', ')}`,
       `player: ${sim.playerName ?? '?'} · seed ${seed} · speed ${timeScale}x · day ${Math.floor(sim.clock.ms / DAY_MS)}`,
     ].join('\n');
   }

@@ -13,6 +13,8 @@ export interface MoveInState {
   ticksLeft: number;
   /** Nodes still to visit while exploring; the first is where he is heading. */
   tour: string[];
+  /** True if he actually moved in on screen (rather than starting already settled). */
+  played: boolean;
 }
 
 export const FRONT_DOOR = 'living.door';
@@ -23,11 +25,11 @@ const AWAY_TICKS = 120;
 const UNPACK_TICKS = 200;
 
 export function createMoveIn(emptyTicks: number): MoveInState {
-  return { stage: 'empty', ticksLeft: emptyTicks, tour: [] };
+  return { stage: 'empty', ticksLeft: emptyTicks, tour: [], played: true };
 }
 
 export function movedIn(): MoveInState {
-  return { stage: 'done', ticksLeft: 0, tour: [] };
+  return { stage: 'done', ticksLeft: 0, tour: [], played: false };
 }
 
 export function stepMoveIn(state: SimState, world: World): void {
