@@ -212,6 +212,8 @@ dialog h2 { margin: 0 0 8px; font-size: 15px; color: var(--muted); font-weight: 
 #speed { display: flex; align-items: center; gap: 8px; font-size: 13px; }
 #speed input { width: min(220px, 50vw); }
 #speed output { min-width: 15ch; color: var(--muted); font-variant-numeric: tabular-nums; }
+#sound { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+#sound input { width: min(120px, 30vw); }
 
 #farewell {
   width: 100%;

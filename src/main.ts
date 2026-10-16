@@ -1,5 +1,6 @@
 import { drawFront, drawHouse, loadArt } from './render/canvas';
 import { drawDogSprite, loadDogSheets } from './render/dogArt';
+import { SoundDirector, type SoundSettings } from './audio/director';
 import { createLighting, roomAt } from './render/lighting';
 import { drawTenantSprite, loadTenantSheet, type TenantPose } from './render/tenantArt';
 import { GAME_NAMES, type GameKind } from './sim/games';
@@ -106,6 +107,26 @@ let scale = 1;
 const pending: Command[] = [];
 const art = await loadArt();
 const lighting = createLighting(house, art);
+
+// Sound: off until the player turns it on. The choice is remembered in this browser.
+const SOUND_KEY = 'lcp-sound';
+function loadSoundSettings(): SoundSettings {
+  const settings: SoundSettings = { muted: true, volume: 0.6, captions: false };
+  try {
+    Object.assign(settings, JSON.parse(localStorage.getItem(SOUND_KEY) ?? '{}'));
+  } catch {
+    // Unreadable or blocked storage: keep the defaults.
+  }
+  return settings;
+}
+const sound = new SoundDirector(loadSoundSettings());
+function saveSoundSettings(): void {
+  try {
+    localStorage.setItem(SOUND_KEY, JSON.stringify(sound.settings));
+  } catch {
+    // Not remembered; fine.
+  }
+}
 const dogSheets = await loadDogSheets();
 const tenantSheet = await loadTenantSheet();
 // ?debug exposes the running game to the console, for poking at it while developing.
@@ -159,9 +180,41 @@ function commandFrom(spec: string): Command {
   return { type: type as 'pat' | 'phone' | 'alarm' };
 }
 
+function sendSpec(spec: string): void {
+  if (spec === 'alarm' && movedIn()) sound.cue('alarm');
+  send(commandFrom(spec));
+}
+
 actions.addEventListener('click', (e) => {
   const button = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-command]');
-  if (button) send(commandFrom(button.dataset.command!));
+  if (button) sendSpec(button.dataset.command!);
+});
+
+const soundToggle = $<HTMLButtonElement>('#sound-toggle');
+const volumeInput = $<HTMLInputElement>('#volume-input');
+const captionsInput = $<HTMLInputElement>('#captions-input');
+function showSoundControls(): void {
+  const on = !sound.settings.muted;
+  soundToggle.textContent = on ? 'Sound on' : 'Sound off';
+  soundToggle.setAttribute('aria-pressed', String(on));
+  volumeInput.hidden = !on;
+  volumeInput.value = String(Math.round(sound.settings.volume * 100));
+  captionsInput.checked = sound.settings.captions;
+}
+function toggleSound(): void {
+  sound.setMuted(!sound.settings.muted);
+  showSoundControls();
+  saveSoundSettings();
+}
+showSoundControls();
+soundToggle.addEventListener('click', toggleSound);
+volumeInput.addEventListener('input', () => {
+  sound.setVolume(Number(volumeInput.value) / 100);
+  saveSoundSettings();
+});
+captionsInput.addEventListener('change', () => {
+  sound.settings.captions = captionsInput.checked;
+  saveSoundSettings();
 });
 
 // Alt+letter shortcuts, by physical key so they work whatever Alt types on a Mac.
@@ -180,7 +233,10 @@ addEventListener('keydown', (e) => {
   const spec = SHORTCUTS[e.code];
   if (spec) {
     e.preventDefault();
-    send(commandFrom(spec));
+    sendSpec(spec);
+  } else if (e.code === 'KeyM') {
+    e.preventDefault();
+    toggleSound();
   } else if (e.code === 'KeyC') {
     e.preventDefault();
     toggleGamePicker();
@@ -371,6 +427,7 @@ function showIntro(): void {
 let lastSpeechSeq = sim.speech?.seq ?? 0;
 let lastKnockSeq = sim.knock?.seq ?? 0;
 let captionUntil = 0;
+let soundCaption: string | null = null;
 
 function updateOverlays(px: number, py: number): void {
   const speech = sim.speech;
@@ -402,7 +459,11 @@ function updateOverlays(px: number, py: number): void {
     caption.textContent = '*ring ring*';
     captionUntil = Math.max(captionUntil, sim.tick + 2);
   }
-  caption.hidden = sim.tick >= captionUntil;
+  if (sim.tick < captionUntil) caption.hidden = false;
+  else if (soundCaption) {
+    if (caption.textContent !== soundCaption) caption.textContent = soundCaption;
+    caption.hidden = false;
+  } else caption.hidden = true;
 }
 
 function updateControls(): void {
@@ -458,6 +519,7 @@ addEventListener('pagehide', () => void save());
 
 let hiddenAt: number | null = null;
 document.addEventListener('visibilitychange', () => {
+  sound.setHidden(document.hidden);
   if (document.hidden) {
     hiddenAt = Date.now();
     void save();
@@ -615,6 +677,7 @@ function frame(now: number): void {
   // He switches the light on in whatever room he's awake in.
   const awake = p.present && p.alive && !isAsleep(sim, world);
   lighting.draw(ctx, hour, awake ? roomAt(house, px, py) : null, dt);
+  soundCaption = sound.update(sim, world, px, py);
   updateOverlays(px, py);
   updateControls();
   updateGame();

@@ -30,6 +30,10 @@ Everything else is original to this project:
 
 - Extra furniture the pack doesn't include (piano, fireplace, telephone table, dog bowl, record player, typewriter desk, computer desk, grandfather clock, games cabinet, wardrobe, exercise rug). These are drawn in code in `src/render/drawnSprites.ts`, using the pack's colour palette so they sit alongside it. They are not derived from the pack's image files.
 
+### Sound
+
+All sound is original and synthesised in code with Web Audio (`src/audio/`): no sample files. The two record tunes are original.
+
 ## Licence obligations to remember
 
 - Keep the credit line above visible wherever the game credits people.

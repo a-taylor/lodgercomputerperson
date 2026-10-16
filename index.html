@@ -24,6 +24,11 @@
             <input id="speed-input" type="range" min="0" step="1" aria-describedby="speed-output" />
             <output id="speed-output" for="speed-input"></output>
           </div>
+          <div id="sound">
+            <button type="button" id="sound-toggle" aria-pressed="false" title="Alt+M">Sound off</button>
+            <label for="volume-input" class="visually-hidden">Volume</label>
+            <input id="volume-input" type="range" min="0" max="100" step="5" hidden />
+          </div>
         </div>
         <div id="speech-log" class="visually-hidden" aria-live="polite"></div>
       </section>
@@ -93,7 +98,7 @@
             <a href="https://penzilla.itch.io/protagonist-character">Free Protagonist</a>).
             Dog sprites by NVPH Studio (<a href="https://nvph-studio.itch.io/dog-animation-4-different-dogs">Dog Animation</a>,
             <a href="https://creativecommons.org/licenses/by-nd/4.0/">CC BY-ND 4.0</a>, unmodified).
-            Extra furniture is original.
+            Extra furniture and all sound are original.
           </p>
         </details>
 
@@ -102,8 +107,9 @@
           <p>
             <kbd>Alt</kbd>+<kbd>F</kbd> food, <kbd>W</kbd> water, <kbd>D</kbd> dog food, <kbd>R</kbd> record, <kbd>B</kbd> book,
             <kbd>T</kbd> pat, <kbd>P</kbd> phone, <kbd>A</kbd> alarm, <kbd>C</kbd> games, <kbd>L</kbd> letters,
-            <kbd>Enter</kbd> full screen. <kbd>Alt</kbd>+<kbd>N</kbd> needs panel, <kbd>Alt</kbd>+<kbd>G</kbd> floor graph.
+            <kbd>M</kbd> sound on/off, <kbd>Enter</kbd> full screen. <kbd>Alt</kbd>+<kbd>N</kbd> needs panel, <kbd>Alt</kbd>+<kbd>G</kbd> floor graph.
           </p>
+          <p><label><input type="checkbox" id="captions-input" /> Caption every sound (piano, TV, typing…), not just knocks and the phone</label></p>
           <p>
             URL: <code>?seed=123</code>, <code>?speed=1</code> (starting speed; default 30), <code>?quick</code>, <code>?movedIn</code>,
             <code>?fresh</code> (ignore the save and start again; it will be overwritten).
