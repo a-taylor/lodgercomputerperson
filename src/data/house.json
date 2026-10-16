@@ -360,7 +360,12 @@
       "name": "Floor lamp",
       "room": "living",
       "x": 121,
-      "art": "pack:Furniture/FloorLamp"
+      "art": "pack:Furniture/FloorLamp",
+      "light": {
+        "x": 4,
+        "y": 4,
+        "radius": 40
+      }
     },
     {
       "id": "fireplace",
@@ -368,7 +373,13 @@
       "room": "living",
       "x": 130,
       "art": "drawn:fireplace",
-      "use": "living.fireplace"
+      "use": "living.fireplace",
+      "light": {
+        "x": 12,
+        "y": 19,
+        "radius": 26,
+        "always": true
+      }
     },
     {
       "id": "phone",
@@ -383,7 +394,12 @@
       "name": "Lamp",
       "room": "kitchen",
       "x": 196,
-      "art": "lamp"
+      "art": "lamp",
+      "light": {
+        "x": 4,
+        "y": 22,
+        "radius": 44
+      }
     },
     {
       "id": "chair-left",
@@ -514,7 +530,12 @@
       "name": "Lamp",
       "room": "study",
       "x": 164,
-      "art": "lamp"
+      "art": "lamp",
+      "light": {
+        "x": 4,
+        "y": 22,
+        "radius": 44
+      }
     },
     {
       "id": "typewriter",
@@ -641,7 +662,12 @@
       "name": "Lamp",
       "room": "office",
       "x": 260,
-      "art": "lamp"
+      "art": "lamp",
+      "light": {
+        "x": 4,
+        "y": 22,
+        "radius": 44
+      }
     },
     {
       "id": "computer",

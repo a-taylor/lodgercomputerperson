@@ -17,12 +17,25 @@ export async function loadArt(): Promise<Art> {
   return { pack: await loadPack(), drawn: bakeSprites() };
 }
 
-/** Sky by the hour: night, dawn and dusk, day. */
+/** Sky by the hour, blended between night, dawn, day and dusk. The night shade goes over it too. */
+const SKY: [number, [number, number, number]][] = [
+  [0, [0x2b, 0x37, 0x68]],
+  [5, [0x2b, 0x37, 0x68]],
+  [6.25, [0xd7, 0x9b, 0x7d]],
+  [7.5, [0x9c, 0xc4, 0xdd]],
+  [18, [0x9c, 0xc4, 0xdd]],
+  [19.5, [0x6b, 0x5a, 0x88]],
+  [21, [0x2b, 0x37, 0x68]],
+  [24, [0x2b, 0x37, 0x68]],
+];
 function skyColour(hour: number): string {
-  if (hour < 5 || hour >= 21) return '#1c2340';
-  if (hour < 7) return '#d79b7d';
-  if (hour >= 19) return '#6b5a88';
-  return '#9cc4dd';
+  const h = ((hour % 24) + 24) % 24;
+  const i = SKY.findIndex(([at]) => at > h);
+  const [h0, c0] = SKY[i - 1]!;
+  const [h1, c1] = SKY[i]!;
+  const t = (h - h0) / (h1 - h0);
+  const [r, g, b] = c0.map((c, k) => Math.round(c + (c1[k]! - c) * t));
+  return `rgb(${r}, ${g}, ${b})`;
 }
 
 export function drawHouse(ctx: CanvasRenderingContext2D, house: House, art: Art, hour: number, tick: number, showGraph: boolean): void {

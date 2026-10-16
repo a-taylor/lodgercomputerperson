@@ -48,6 +48,11 @@ export interface FurnitureDef {
    * begins. The front is drawn again over him so he's in it, not on it.
    */
   sitIn?: { seatHeight: number; frontFromRow: number };
+  /**
+   * Lamps and fires: where the light comes from (offset from the art's top-left), how far it
+   * reaches, and whether it's always on (a fire) or only while he's in the room.
+   */
+  light?: { x: number; y: number; radius: number; always?: boolean };
 }
 
 /** The outer frame on the 8-pixel tile grid. */

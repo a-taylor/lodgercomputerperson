@@ -1,5 +1,6 @@
 import { drawFront, drawHouse, loadArt } from './render/canvas';
 import { drawDogSprite, loadDogSheets } from './render/dogArt';
+import { createLighting, roomAt } from './render/lighting';
 import { drawTenantSprite, loadTenantSheet, type TenantPose } from './render/tenantArt';
 import { GAME_NAMES, type GameKind } from './sim/games';
 import type { DeliveryItem } from './sim/interactions';
@@ -104,6 +105,7 @@ let introDismissed = false;
 let scale = 1;
 const pending: Command[] = [];
 const art = await loadArt();
+const lighting = createLighting(house, art);
 const dogSheets = await loadDogSheets();
 const tenantSheet = await loadTenantSheet();
 // ?debug exposes the running game to the console, for poking at it while developing.
@@ -557,7 +559,8 @@ const prev = { x: sim.person.x, y: sim.person.y, dx: sim.dog.x, dy: sim.dog.y };
 if (away) welcomeBack(away);
 
 function frame(now: number): void {
-  acc += Math.min(now - last, 1000);
+  const dt = Math.min(now - last, 1000);
+  acc += dt;
   last = now;
   while (acc >= TICK_MS) {
     prev.x = sim.person.x;
@@ -574,7 +577,8 @@ function frame(now: number): void {
   const py = lerp(prev.y, p.y);
 
   ctx.imageSmoothingEnabled = false;
-  drawHouse(ctx, house, art, (sim.clock.ms % DAY_MS) / HOUR_MS, sim.tick, showGraph);
+  const hour = (sim.clock.ms % DAY_MS) / HOUR_MS;
+  drawHouse(ctx, house, art, hour, sim.tick, showGraph);
   // The dog comes already outlined from its pack; the tenant gets the outline added.
   if (dog.present) {
     drawDogSprite(ctx, dogSheets, dog.identity.breed, {
@@ -608,6 +612,9 @@ function frame(now: number): void {
     drawTenantSprite(ctx, tenantSheet, p.identity.look, figure);
     if (inside) drawFront(ctx, house, art, inside);
   }
+  // He switches the light on in whatever room he's awake in.
+  const awake = p.present && p.alive && !isAsleep(sim, world);
+  lighting.draw(ctx, hour, awake ? roomAt(house, px, py) : null, dt);
   updateOverlays(px, py);
   updateControls();
   updateGame();
