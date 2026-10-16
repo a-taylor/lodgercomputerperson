@@ -26,7 +26,7 @@ Sources: Wikipedia, C64-Wiki, StrategyWiki, ST News review, Retro365, The Oasis 
 
 1. **Watching is the game.** The default state is you looking at a room while he gets on with his day. Everything else is a small intrusion into that.
 2. **He has a will.** He can ignore, refuse, or comply late. Refusals have reasons he can voice ("I'm tired", "not now, I'm reading").
-3. **Small, specific, deterministic.** Hand-authored activities and a large pool of hand-written lines beat a clever generic system. No LLM in the core loop. Letters and speech come from templates keyed on real state, with enough variety that repetition is rare. (An optional LLM flourish for letters can be considered later, off by default.)
+3. **Small, specific, deterministic.** Hand-authored activities and a large pool of hand-written lines beat a clever generic system. No LLM in the core loop. Letters and speech come from templates keyed on real state, with enough variety that repetition is rare. (Optional LLM features for letters and free-text requests are specified in PLAN_V2.md: off by default, with these templates as the fallback.)
 4. **Consequences without cruelty.** Neglect makes him sick and miserable; death is possible but slow, warned, and recoverable via a "new tenant" flow that keeps the old one in a memorial page.
 5. **Respect the player's time.** It runs in a background tab, and catches up sensibly when you return.
 
@@ -49,7 +49,7 @@ Sources: Wikipedia, C64-Wiki, StrategyWiki, ST News review, Retro365, The Oasis 
 - **House as data.** Rooms, floor graph (walkable nodes and stairs), and furniture with interaction points defined in JSON. Navigation is waypoint pathing on the floor graph; no physics.
 - **Behaviour.** Utility-based selection over needs, mood, time of day and traits, choosing from a library of activities. Each activity is a small state machine (walk to node, animate, effects, duration, interrupts). Adding an activity means adding data plus one script.
 - **Dialogue and letters.** Template engine with slots for state, history and traits, plus a repetition guard.
-- **Parser.** Tokenise, normalise, map to intents with synonyms and a politeness flag; intent plus mood plus context yields comply, refuse or defer.
+- **Parser.** Tokenise, normalise, map to intents with synonyms and a politeness flag; intent plus mood plus context yields comply, refuse or defer. Chained requests ("play the piano and then dance") split on "then" / "and then" into an ordered queue of at most four. Compliance is checked as each item reaches the front, not when typed, and urgent needs can pre-empt the queue. Input the parser cannot match goes through a single fallback hook (none by default) that PLAN_V2.md uses for an LLM.
 - **Save.** `{version, seed, person, dog, needs, mood, memory, house, clock, lastSeen}`.
 - **Tests.** Vitest for sim determinism, catch-up, parser and save migration; Playwright smoke test for load, move-in, save/reload.
 
@@ -61,8 +61,8 @@ Sources: Wikipedia, C64-Wiki, StrategyWiki, ST News review, Retro365, The Oasis 
 4. **Player interaction.** Deliveries, patting, phone, alarm, typed parser with compliance logic, speech bubbles, knock-on-glass. *Accept:* "please play the piano" works in at least five phrasings; refusals have reasons; politeness changes odds measurably in tests.
 5. **Letters and games.** Typewriter letters from state; Poker, War, Anagrams, word puzzle with mood effects. *Accept:* no repeated letter text within 30 letters; letting him win vs always winning shifts mood.
 6. **Persistence and away time.** IndexedDB autosave, export/import, catch-up, "while you were away" letter, sickness and recoverable death flow. *Accept:* close tab for 12 hours (simulated clock) and he is plausibly asleep, fed or hungry, with a letter waiting.
-7. **Polish.** Final pixel art and animation pass, sound, day/night, PWA, accessibility, touch. *Accept:* Lighthouse PWA and a11y checks pass; playable on a phone.
-8. **Content depth.** More activities, quirks, seasonal events, a few rare surprises. Ongoing.
+7. **Polish.** Final pixel art and animation pass, sound, day/night, accessibility, touch. *Accept:* Lighthouse a11y check passes; playable on a phone. (PWA, letter notifications, drag-and-drop items and seasonal touches are deferred to v2; see PLAN_V2.md section 7.)
+8. **Request queue (last v1 item).** Replace the single `pending` request slot with the ordered queue described in section 5 (with a save migration), and make "then" chains work through the plain parser. *Accept:* "play the piano and then dance" runs both in order; urgent needs pre-empt the queue; old saves migrate. After v1, content depth (more activities, quirks, seasonal events, rare surprises, two-actor dog activities) is ongoing; see PLAN_V2.md section 7.
 
 ## 7. Risks and decisions for the owner
 
