@@ -82,9 +82,9 @@ canvas {
   25% { transform: translate(-3px, 1px); }
   75% { transform: translate(3px, -1px); }
 }
-@media (prefers-reduced-motion: reduce) {
-  #stage.knocking { animation: none; }
-}
+/* Set from the OS preference, or the player's choice under "Shortcuts & options". */
+.reduce-motion #stage.knocking { animation: none; }
+.reduce-motion button.card.held { transform: none; }
 #bubble {
   position: absolute;
   transform: translate(-50%, -100%);
@@ -136,7 +136,7 @@ canvas {
   clip-path: inset(50%);
   white-space: nowrap;
 }
-#status { margin: 0; font-variant-numeric: tabular-nums; }
+#status-line { margin: 0; font-variant-numeric: tabular-nums; }
 #intro {
   display: flex;
   flex-wrap: wrap;
@@ -210,8 +210,8 @@ dialog h2 { margin: 0 0 8px; font-size: 15px; color: var(--muted); font-weight: 
 }
 
 #speed { display: flex; align-items: center; gap: 8px; font-size: 13px; }
-#speed input { width: min(220px, 50vw); }
-#speed output { min-width: 15ch; color: var(--muted); font-variant-numeric: tabular-nums; }
+#speed input { width: min(220px, 35vw); }
+#speed output { min-width: 15ch; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 #sound { display: flex; align-items: center; gap: 8px; font-size: 13px; }
 #sound input { width: min(120px, 30vw); }
 

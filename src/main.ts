@@ -36,8 +36,10 @@ function randomSeed(): number {
 /** A brand-new home: an empty house, with a stranger due any minute. */
 function newHome(seed: number, scale: number): SimState {
   const now = new Date();
+  // ?hour=14 starts a new home at that time of day instead of the real time.
+  const hour = Number(params.get('hour'));
   return createSim(world, seed, {
-    startMinute: now.getHours() * 60 + now.getMinutes(),
+    startMinute: params.has('hour') && hour >= 0 && hour < 24 ? Math.floor(hour * 60) : now.getHours() * 60 + now.getMinutes(),
     timeScale: scale,
     startEmpty: !params.has('movedIn'),
     emptyTicks: params.has('quick') ? 60 : undefined,
@@ -78,7 +80,9 @@ const canvas = $<HTMLCanvasElement>('#house');
 const stage = $<HTMLDivElement>('#stage');
 const bubble = $<HTMLDivElement>('#bubble');
 const caption = $<HTMLDivElement>('#caption');
-const status = $<HTMLParagraphElement>('#status');
+const status = $<HTMLSpanElement>('#status');
+// The clock sits outside the live region, so screen readers hear what he does, not every minute.
+const clock = $<HTMLSpanElement>('#clock');
 const speechLog = $<HTMLDivElement>('#speech-log');
 const debug = $<HTMLPreElement>('#debug');
 const intro = $<HTMLFormElement>('#intro');
@@ -193,6 +197,31 @@ actions.addEventListener('click', (e) => {
 const soundToggle = $<HTMLButtonElement>('#sound-toggle');
 const volumeInput = $<HTMLInputElement>('#volume-input');
 const captionsInput = $<HTMLInputElement>('#captions-input');
+
+// Reduced motion follows the OS until the player chooses; the choice is remembered.
+const MOTION_KEY = 'lcp-motion';
+const reduceMotionInput = $<HTMLInputElement>('#reduce-motion-input');
+let reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+try {
+  const saved = localStorage.getItem(MOTION_KEY);
+  if (saved === 'reduce' || saved === 'full') reduceMotion = saved === 'reduce';
+} catch {
+  // Storage blocked: follow the OS.
+}
+function applyMotion(): void {
+  document.documentElement.classList.toggle('reduce-motion', reduceMotion);
+  reduceMotionInput.checked = reduceMotion;
+}
+applyMotion();
+reduceMotionInput.addEventListener('change', () => {
+  reduceMotion = reduceMotionInput.checked;
+  applyMotion();
+  try {
+    localStorage.setItem(MOTION_KEY, reduceMotion ? 'reduce' : 'full');
+  } catch {
+    // Not remembered; fine.
+  }
+});
 function showSoundControls(): void {
   const on = !sound.settings.muted;
   soundToggle.textContent = on ? 'Sound on' : 'Sound off';
@@ -433,16 +462,22 @@ let lastSpeechSeq = sim.speech?.seq ?? 0;
 let lastKnockSeq = sim.knock?.seq ?? 0;
 let captionUntil = 0;
 let soundCaption: string | null = null;
+let wasRinging = false;
+
+/** Adds a line to the hidden log that screen readers announce. */
+function logLine(text: string): void {
+  const line = document.createElement('p');
+  line.textContent = text;
+  speechLog.append(line);
+  while (speechLog.childElementCount > 5) speechLog.firstElementChild!.remove();
+}
 
 function updateOverlays(px: number, py: number): void {
   const speech = sim.speech;
   if (speech && speech.seq !== lastSpeechSeq) {
     lastSpeechSeq = speech.seq;
     bubble.textContent = speech.text;
-    const line = document.createElement('p');
-    line.textContent = `${sim.person.identity.name}: ${speech.text}`;
-    speechLog.append(line);
-    while (speechLog.childElementCount > 5) speechLog.firstElementChild!.remove();
+    logLine(`${sim.person.identity.name}: ${speech.text}`);
   }
   const talking = speech !== null && sim.tick < speech.untilTick && sim.person.present;
   bubble.hidden = !talking;
@@ -459,8 +494,12 @@ function updateOverlays(px: number, py: number): void {
     stage.classList.add('knocking');
     caption.textContent = '*knock knock*';
     captionUntil = sim.tick + 60;
+    logLine(`${sim.person.identity.name} knocks on the glass.`);
   }
-  if (sim.phoneRing && sim.tick < sim.phoneRing.untilTick) {
+  const ringing = sim.phoneRing !== null && sim.tick < sim.phoneRing.untilTick;
+  if (ringing && !wasRinging) logLine('The phone is ringing.');
+  wasRinging = ringing;
+  if (ringing) {
     caption.textContent = '*ring ring*';
     captionUntil = Math.max(captionUntil, sim.tick + 2);
   }
@@ -645,7 +684,8 @@ function frame(now: number): void {
 
   ctx.imageSmoothingEnabled = false;
   const hour = (sim.clock.ms % DAY_MS) / HOUR_MS;
-  drawHouse(ctx, house, art, hour, sim.tick, showGraph);
+  // Reduced motion: furniture holds still (no fire flicker).
+  drawHouse(ctx, house, art, hour, reduceMotion ? 0 : sim.tick, showGraph);
   // The dog comes already outlined from its pack; the tenant gets the outline added.
   if (dog.present) {
     drawDogSprite(ctx, dogSheets, dog.identity.breed, {
@@ -681,7 +721,8 @@ function frame(now: number): void {
   }
   // He switches the light on in whatever room he's awake in.
   const awake = p.present && p.alive && !isAsleep(sim, world);
-  lighting.draw(ctx, hour, awake ? roomAt(house, px, py) : null, dt);
+  // Reduced motion: lights switch rather than fade.
+  lighting.draw(ctx, hour, awake ? roomAt(house, px, py) : null, reduceMotion ? Infinity : dt);
   soundCaption = sound.update(sim, world, px, py);
   updateOverlays(px, py);
   updateControls();
@@ -692,7 +733,9 @@ function frame(now: number): void {
   if (movedIn() && sim.playerName === null && !introDismissed && intro.hidden && sim.knock) showIntro();
 
   // Only touch the live region when the text changes, not every frame.
-  const text = `${clockText(sim.clock.ms)} · ${describe()}`;
+  const time = clockText(sim.clock.ms);
+  if (clock.textContent !== time) clock.textContent = time;
+  const text = describe();
   if (status.textContent !== text) status.textContent = text;
 
   if (!debug.hidden) {
