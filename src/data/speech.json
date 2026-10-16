@@ -86,6 +86,17 @@
     "Okay, now for that.",
     "I didn't forget!"
   ],
+  "queue.added": [
+    "I'll add it to the list.",
+    "After the other things, then.",
+    "Okay, I'll get round to it.",
+    "Noted. In order, mind."
+  ],
+  "queue.full": [
+    "That's enough to be going on with!",
+    "Steady on, one thing at a time.",
+    "I can't remember all that. I'll do the first few."
+  ],
   "refuse.tired": [
     "I'm too tired.",
     "Maybe later, I'm worn out.",

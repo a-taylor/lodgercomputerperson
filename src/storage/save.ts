@@ -5,7 +5,7 @@ import { createSim, type SimState } from '../sim/sim';
 import type { World } from '../sim/world';
 
 export const SAVE_FORMAT = 'lodger-computer-person';
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 export interface SaveFile {
   format: typeof SAVE_FORMAT;
@@ -23,7 +23,18 @@ export class SaveError extends Error {}
 
 /** Upgrades a raw save from version n to n + 1. Keyed by n. */
 export type Migration = (raw: Record<string, unknown>) => Record<string, unknown>;
-export const MIGRATIONS: Record<number, Migration> = {};
+export const MIGRATIONS: Record<number, Migration> = {
+  // v1 kept one put-off request in `pending`; v2 has a queue. An old pending one was agreed to.
+  1: (raw) => {
+    const state = raw.state;
+    if (isRecord(state)) {
+      const pending = state.pending;
+      state.queue = isRecord(pending) ? [{ ...pending, politeness: 0, agreed: true }] : [];
+      delete state.pending;
+    }
+    return raw;
+  },
+};
 
 export function makeSave(state: SimState, memorial: MemorialEntry[], now: number): SaveFile {
   return { format: SAVE_FORMAT, version: SAVE_VERSION, savedAt: now, lastSeen: now, state, memorial };

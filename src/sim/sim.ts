@@ -10,10 +10,11 @@ import {
   pat,
   ringPhone,
   soundAlarm,
-  takePending,
+  takeQueued,
   wantsAttention,
   type DeliveryItem,
   type KnockReason,
+  type QueuedRequest,
 } from './interactions';
 import type { Letter } from './letters';
 import { remember, type DayLog } from './memory';
@@ -106,8 +107,8 @@ export interface SimState {
   /** The latest knock on the glass, for the UI to shake and caption. */
   knock: { seq: number; reason: KnockReason; tick: number } | null;
   lastKnockMs: number | null;
-  /** Something he agreed to do once he's finished what he's doing. */
-  pending: { activity: string; node: string | null; game: GameKind | null; untilMs: number } | null;
+  /** Things you've asked him to do next, in order. The first may already be agreed to. */
+  queue: QueuedRequest[];
   /** Game time the player last did anything. */
   lastInteractionMs: number | null;
   /** Game times of recent pats on the head. */
@@ -209,7 +210,7 @@ export function createSim(world: World, seed: number, options: SimOptions = {}):
     recentLines: [],
     knock: null,
     lastKnockMs: null,
-    pending: null,
+    queue: [],
     lastInteractionMs: null,
     pats: [],
     phoneRing: null,
@@ -269,7 +270,7 @@ export function step(state: SimState, world: World, commands: readonly Command[]
   } else {
     for (const cmd of commands) applyCommand(state, world, cmd);
     if (p.alive) {
-      if (!p.activity) chooseActivity(state, world);
+      if (!p.activity && !takeQueued(state, world)) chooseActivity(state, world);
       advanceActivity(state, world);
       updateBody(state, world);
       checkInterrupts(state, world);
@@ -457,7 +458,7 @@ function advanceActivity(state: SimState, world: World): void {
   const run = p.activity!;
   const def = world.activities.byId.get(run.id)!;
   // A game lasts as long as the game does.
-  if (run.id === 'game' && (!state.game || state.game.over)) return finishActivity(state, world, def);
+  if (run.id === 'game' && (!state.game || state.game.over)) return finishActivity(state, def);
   if (p.path.length > 0) {
     walk(p, world.house, p.identity.pace);
     return;
@@ -488,11 +489,11 @@ function advanceActivity(state: SimState, world: World): void {
     run.step++;
     beginWalkToStep(state, world);
   } else {
-    finishActivity(state, world, def);
+    finishActivity(state, def);
   }
 }
 
-function finishActivity(state: SimState, world: World, def: ActivityDef): void {
+function finishActivity(state: SimState, def: ActivityDef): void {
   state.lastDone[def.id] = state.clock.ms;
   state.person.activity = null;
   const mood = state.person.mood;
@@ -502,7 +503,6 @@ function finishActivity(state: SimState, world: World, def: ActivityDef): void {
     log.moodSamples++;
   });
   if (def.id === 'letter') finishLetter(state);
-  takePending(state, world);
 }
 
 function knockOnGlass(state: SimState, reason: KnockReason): void {
@@ -568,6 +568,12 @@ function checkInterrupts(state: SimState, world: World): void {
   if (CRITICAL_NEEDS.some((id) => p.needs[id] < CRITICAL && serves(def, id))) return;
   if (run.id === 'game') abandonGame(state);
   p.activity = null;
+}
+
+/** Whether an urgent need should come before doing this, even if you asked. */
+export function needPreempts(state: SimState, world: World, def: ActivityDef): boolean {
+  const critical = mostCriticalNeed(state, world);
+  return critical !== null && !serves(def, critical);
 }
 
 /** The emptiest critical need that some activity can do something about, if any. */

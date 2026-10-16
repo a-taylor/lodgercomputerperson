@@ -5,11 +5,11 @@ import type { ActivityDef } from './activities';
 import { GAME_NAMES, type GameKind } from './games';
 import { remember } from './memory';
 import { clampNeed } from './needs';
-import { parse, type Parsed, type Politeness } from './parser';
+import { parse, splitChain, type Parsed, type Politeness } from './parser';
 import { nextFloat, pick } from './rng';
 import { answerInvite, startGame } from './play';
 import { say } from './speech';
-import { currentStep, isAvailable, isAsleep, startActivity, stopActivity, type SimState } from './sim';
+import { currentStep, isAvailable, isAsleep, needPreempts, startActivity, stopActivity, type SimState } from './sim';
 import { HOUR_MS, MINUTE_MS } from './time';
 import { DELIVERY, hasRequirement, RUNNING_LOW, type RequirementId, type SupplyId } from './supplies';
 import type { World } from './world';
@@ -56,8 +56,28 @@ const MISSING: Record<RequirementId, Refusal> = {
 };
 
 const MUSIC: string[] = identityJson.music;
-/** A requested activity he agreed to but put off waits this long before he forgets it. */
+/** A request waiting its turn is forgotten after this long (per place in the queue). */
 const DEFER_MS = 2 * HOUR_MS;
+/** How many things he'll keep in mind to do next. */
+export const MAX_QUEUE = 4;
+
+/** Something you asked him to do once he's done what he's doing. */
+export interface QueuedRequest {
+  activity: string;
+  node: string | null;
+  game: GameKind | null;
+  politeness: Politeness;
+  untilMs: number;
+  /** He already said yes (it was first in line when asked). Otherwise he decides when it comes up. */
+  agreed: boolean;
+}
+
+/** An activity request, as the queue and compliance see it. */
+interface Ask {
+  activity: string;
+  node?: string;
+  game?: GameKind;
+}
 const NOVELTY_MS = 8 * HOUR_MS;
 
 /**
@@ -111,8 +131,15 @@ export function assessRequest(state: SimState, world: World, activityId: string,
 /** Handles something typed. Returns the outcome for requests, null for chat. */
 export function handleSay(state: SimState, world: World, text: string): Outcome | null {
   touch(state);
-  const parsed = parse(text, { dogName: state.dog.identity.name });
+  const ctx = { dogName: state.dog.identity.name };
+  const parsed = parse(text, ctx);
   const p = state.person;
+
+  // "Play the piano and then dance": two or more requests become a queue.
+  const asks = splitChain(text)
+    .map((part) => askOf(world, parse(part, ctx)))
+    .filter((a): a is Ask => a !== null);
+  if (asks.length > 1) return handleChain(state, world, parsed.politeness, asks);
 
   if (isAsleep(state, world)) {
     if (parsed.intent === 'wake') wakeOnRequest(state, world, parsed.politeness);
@@ -151,25 +178,72 @@ export function handleSay(state: SimState, world: World, text: string): Outcome 
       if (state.invitation && (!parsed.game || parsed.game === state.invitation.game) && answerInvite(state, world, true)) {
         return { kind: 'comply' };
       }
-      return request(state, world, 'game', parsed, undefined, parsed.game);
+      return requestOrQueue(state, world, askOf(world, parsed)!, parsed.politeness);
     case 'playWhat':
       say(state, 'playWhat');
       return null;
-    case 'goTo':
-      return request(state, world, 'potter', parsed, roomNode(world, parsed.room!));
     default:
-      return request(state, world, parsed.activity!, parsed);
+      return requestOrQueue(state, world, askOf(world, parsed)!, parsed.politeness);
   }
 }
 
-function request(state: SimState, world: World, activityId: string, parsed: Parsed, node?: string, game?: GameKind): Outcome {
+/** The activity a parsed line asks for, if it asks for one. */
+function askOf(world: World, parsed: Parsed): Ask | null {
+  if (parsed.intent === 'game') return { activity: 'game', game: parsed.game };
+  if (parsed.intent === 'goTo') return { activity: 'potter', node: roomNode(world, parsed.room!) };
+  return parsed.activity ? { activity: parsed.activity } : null;
+}
+
+/** With others already waiting, a new request goes to the back; otherwise he answers now. */
+function requestOrQueue(state: SimState, world: World, ask: Ask, politeness: Politeness): Outcome {
+  if (state.queue.length === 0) return request(state, world, ask, politeness);
+  if (enqueue(state, [ask], politeness) > 0) say(state, 'queue.added');
+  return { kind: 'defer' };
+}
+
+function handleChain(state: SimState, world: World, politeness: Politeness, asks: Ask[]): Outcome {
+  const p = state.person;
+  if (isAsleep(state, world)) {
+    say(state, 'asleep');
+    return { kind: 'refuse', reason: 'asleep' };
+  }
+  if (politeness < 0) p.mood = clampNeed(p.mood - 3);
+  if (politeness !== 0) remember(state, (log) => (politeness > 0 ? log.polite++ : log.rude++));
+  // The first is answered now if nothing is waiting; the rest wait their turn.
+  const outcome = requestOrQueue(state, world, asks[0]!, politeness);
+  const rest = asks.slice(1);
+  if (enqueue(state, rest, politeness) < rest.length) say(state, 'queue.full');
+  return outcome;
+}
+
+/** Adds requests to the back of the queue, as many as fit. Returns how many fitted. */
+function enqueue(state: SimState, asks: Ask[], politeness: Politeness, agreed = false): number {
+  let added = 0;
+  for (const ask of asks) {
+    if (state.queue.length >= MAX_QUEUE) break;
+    state.queue.push({
+      activity: ask.activity,
+      node: ask.node ?? null,
+      game: ask.game ?? null,
+      politeness,
+      untilMs: state.clock.ms + DEFER_MS * (state.queue.length + 1),
+      agreed,
+    });
+    added++;
+  }
+  return added;
+}
+
+function request(state: SimState, world: World, ask: Ask, politeness: Politeness): Outcome {
+  const { activity: activityId, node } = ask;
+  let game = ask.game;
   const p = state.person;
   const def = world.activities.byId.get(activityId)!;
   if (activityId === 'game') game ??= state.game?.over === false ? state.game.kind : undefined;
   const a =
     activityId === 'potter'
-      ? { chance: Math.min(1, 0.4 + (0.5 * p.mood) / 100 + 0.25 * parsed.politeness), hard: null, soft: null }
-      : assessRequest(state, world, activityId, parsed.politeness);
+      ? { chance: Math.min(1, 0.4 + (0.5 * p.mood) / 100 + 0.25 * politeness), hard: null, soft: null }
+      : assessRequest(state, world, activityId, politeness);
   const slots: Record<string, string> = { activity: def.noun };
   if (game) slots.game = GAME_NAMES[game];
 
@@ -179,16 +253,16 @@ function request(state: SimState, world: World, activityId: string, parsed: Pars
     return { kind: 'refuse', reason: a.hard };
   }
   if (nextFloat(state.rng) >= a.chance) {
-    const reason: Refusal = a.soft ?? (parsed.politeness < 0 ? 'rude' : p.mood < 40 ? 'mood' : 'whim');
+    const reason: Refusal = a.soft ?? (politeness < 0 ? 'rude' : p.mood < 40 ? 'mood' : 'whim');
     say(state, `refuse.${reason}`, slots);
     remember(state, (log) => log.refusals++);
     return { kind: 'refuse', reason };
   }
 
-  if (parsed.politeness > 0) p.mood = clampNeed(p.mood + 2);
+  if (politeness > 0) p.mood = clampNeed(p.mood + 2);
   const busyWith = busy(state, world);
   if (busyWith) {
-    state.pending = { activity: activityId, node: node ?? null, game: game ?? null, untilMs: state.clock.ms + DEFER_MS };
+    enqueue(state, [{ activity: activityId, node, game }], politeness, true);
     say(state, 'defer', { current: busyWith });
     return { kind: 'defer' };
   }
@@ -198,7 +272,7 @@ function request(state: SimState, world: World, activityId: string, parsed: Pars
     say(state, 'comply.game', { game: GAME_NAMES[state.game!.kind] });
     return { kind: 'comply' };
   }
-  const key = parsed.politeness > 0 && nextFloat(state.rng) < 0.35 ? 'comply.polite' : `comply.${activityId === 'potter' ? 'goTo' : activityId}`;
+  const key = politeness > 0 && nextFloat(state.rng) < 0.35 ? 'comply.polite' : `comply.${activityId === 'potter' ? 'goTo' : activityId}`;
   say(state, key, slots);
   startActivity(state, world, activityId, node);
   return { kind: 'comply' };
@@ -213,17 +287,29 @@ function busy(state: SimState, world: World): string | null {
   return currentStep(state, world)!.label;
 }
 
-/** Called when an activity ends: picks up anything he promised to do later. */
-export function takePending(state: SimState, world: World): boolean {
-  const pending = state.pending;
-  state.pending = null;
-  if (!pending || pending.untilMs < state.clock.ms) return false;
-  const def = world.activities.byId.get(pending.activity)!;
-  if (!isAvailable(state, def, true)) return false;
-  say(state, 'deferDone');
-  if (pending.activity === 'game') startGame(state, world, pending.game ?? undefined);
-  else startActivity(state, world, pending.activity, pending.node ?? undefined);
-  return true;
+/**
+ * Called when he's free: starts the next thing you asked for, if it's still wanted. Things he
+ * hadn't agreed to yet get a yes or no now. An urgent need comes first and the queue waits.
+ */
+export function takeQueued(state: SimState, world: World): boolean {
+  while (state.queue.length > 0) {
+    const next = state.queue[0]!;
+    if (next.untilMs < state.clock.ms) {
+      state.queue.shift();
+      continue;
+    }
+    const def = world.activities.byId.get(next.activity)!;
+    if (needPreempts(state, world, def)) return false;
+    state.queue.shift();
+    const ask: Ask = { activity: next.activity, node: next.node ?? undefined, game: next.game ?? undefined };
+    if (!next.agreed) return request(state, world, ask, next.politeness).kind === 'comply';
+    if (!isAvailable(state, def, true)) continue;
+    say(state, 'deferDone');
+    if (next.activity === 'game') startGame(state, world, ask.game);
+    else startActivity(state, world, next.activity, ask.node);
+    return true;
+  }
+  return false;
 }
 
 function wakeOnRequest(state: SimState, world: World, politeness: Politeness): void {

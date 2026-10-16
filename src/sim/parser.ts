@@ -94,6 +94,14 @@ export interface ParseContext {
   dogName?: string;
 }
 
+/** Splits "play the piano and then dance" into its parts, in order. One part if there's no "then". */
+export function splitChain(raw: string): string[] {
+  return raw
+    .split(/(?:[,;]?\s*\band\s+then\b|[,;]?\s*\bthen\b)/i)
+    .map((part) => part.trim())
+    .filter((part) => /[a-z]/i.test(part));
+}
+
 export function parse(raw: string, ctx: ParseContext = {}): Parsed {
   const letters = raw.replace(/[^a-z]/gi, '');
   const shouting = letters.length >= 4 && letters === letters.toUpperCase();

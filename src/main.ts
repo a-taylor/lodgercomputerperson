@@ -407,12 +407,17 @@ function describe(): string {
       break;
   }
   if (!p.alive) return `${name} has died.`;
+  const label = currentStep(sim, world)?.label;
+  let now = label ? `${name} is ${label}` : `${name} is standing about`;
   if (p.path.length > 0) {
     const room = house.def.rooms.find((r) => r.id === house.nodes.get(p.path[p.path.length - 1]!)!.room)!;
-    return `${name} is heading to the ${room.name.toLowerCase()}`;
+    now = `${name} is heading to the ${room.name.toLowerCase()}`;
   }
-  const label = currentStep(sim, world)?.label;
-  return label ? `${name} is ${label}` : `${name} is standing about`;
+  return sim.queue.length > 0 ? `${now} · Next: ${sim.queue.map(queuedNoun).join(', then ')}` : now;
+}
+
+function queuedNoun(q: SimState['queue'][number]): string {
+  return q.game ? GAME_NAMES[q.game] : world.activities.byId.get(q.activity)!.noun;
 }
 
 function showIntro(): void {
