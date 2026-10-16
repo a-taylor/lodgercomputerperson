@@ -262,3 +262,37 @@ describe('activity data', () => {
     for (const id of CORE) expect(world.activities.byId.has(id), id).toBe(true);
   });
 });
+
+describe('needs near the threshold', () => {
+  it('finishes a drink and a meal instead of bouncing between needs', () => {
+    // From a real save: food, water and energy all hovering around CRITICAL, nothing ever finished.
+    const sim = createSim(world, 7, { startMinute: 9 * 60 + 29 });
+    sim.playerName = 'Sam';
+    Object.assign(sim.person.needs, { food: 8.2, water: 6.2, energy: 7.75, hygiene: 71, fun: 0 });
+    run(sim, world, (3 * HOUR_MS) / sim.clock.msPerTick);
+    expect(sim.lastDone.drink).toBeDefined();
+    expect(sim.lastDone.eat).toBeDefined();
+    expect(sim.person.needs.water).toBeGreaterThan(20);
+    expect(sim.person.needs.food).toBeGreaterThan(20);
+  });
+
+  it('rests properly in bed when ill, even if not tired', () => {
+    const sim = createSim(world, 7, { startMinute: 15 * 60 });
+    sim.playerName = 'Sam';
+    Object.assign(sim.person, { health: 40, sick: true });
+    sim.person.needs.energy = 100;
+    const naps: number[] = [];
+    let started: number | null = null;
+    for (let i = 0; i < (8 * HOUR_MS) / sim.clock.msPerTick; i++) {
+      step(sim, world);
+      const asleep = isAsleep(sim, world);
+      if (asleep && started === null) started = sim.clock.ms;
+      if (!asleep && started !== null) {
+        naps.push(sim.clock.ms - started);
+        started = null;
+      }
+    }
+    expect(naps.length).toBeGreaterThan(0);
+    for (const nap of naps) expect(nap).toBeGreaterThanOrEqual(2 * HOUR_MS - MINUTE_MS);
+  });
+});

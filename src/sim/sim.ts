@@ -48,6 +48,8 @@ const WINDOW = 'study.window';
 /** Health below which he falls sick, and above which he's well again. */
 export const SICK_BELOW = 50;
 const WELL_ABOVE = 65;
+/** The shortest lie-down when he's ill. */
+const SICK_REST_MS = 2 * HOUR_MS;
 /** Activities scoring at least this fraction of the best are in the running. */
 const SHORTLIST = 0.4;
 /** Below this hour weight, an activity is out of its natural time. */
@@ -479,8 +481,11 @@ function advanceActivity(state: SimState, world: World): void {
   }
   run.remainingMs -= state.clock.msPerTick;
   const until = stepDef.until;
+  // Ill in bed, he rests a while even when he isn't tired, instead of bobbing straight back up.
+  const restedEnough = !(p.sick && stepDef.asleep) || stepDef.minutes[0] * MINUTE_MS - run.remainingMs >= SICK_REST_MS;
   const satisfied =
     until !== undefined &&
+    restedEnough &&
     effectValue(state, until.key) >= until.atLeast &&
     inHours(bodyHour(state), until.fromHour ?? 0, until.toHour ?? 24);
   if (run.remainingMs > 0 && !satisfied) return;
@@ -566,6 +571,10 @@ function checkInterrupts(state: SimState, world: World): void {
   const def = world.activities.byId.get(run.id)!;
   if (!mostCriticalNeed(state, world)) return;
   if (CRITICAL_NEEDS.some((id) => p.needs[id] < CRITICAL && serves(def, id))) return;
+  // A meal or a drink is quick, so it gets finished. Otherwise, with two needs hovering at the
+  // threshold, topping one up just past it hands over to the other and nothing is ever finished.
+  // Sleep is long, so it still gives way.
+  if (!def.steps.some((s) => s.asleep) && CRITICAL_NEEDS.some((id) => serves(def, id))) return;
   if (run.id === 'game') abandonGame(state);
   p.activity = null;
 }
