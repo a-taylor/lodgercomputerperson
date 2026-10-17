@@ -12,7 +12,10 @@ import { createSim, currentStep, DAY_MS, HOUR_MS, isAsleep, step, TICK_MS, timeS
 import { defaultWorld } from './sim/world';
 import { readSave, writeSave } from './storage/idb';
 import { makeSave, parseSave, SaveError, type SaveFile } from './storage/save';
+import '@fontsource/pixelify-sans/400.css';
+import '@fontsource/pixelify-sans/600.css';
 import { h } from './ui/dom';
+import { fillIcons, icon } from './ui/icons';
 import { renderGame } from './ui/gamePanel';
 
 const world = defaultWorld();
@@ -99,10 +102,12 @@ const gameSection = $<HTMLElement>('#game');
 const gamesButton = $<HTMLButtonElement>('#games-button');
 const gamePicker = $<HTMLDivElement>('#game-picker');
 const lettersButton = $<HTMLButtonElement>('#letters-button');
+const lettersLabel = lettersButton.querySelector<HTMLSpanElement>('.label')!;
 const letterDialog = $<HTMLDialogElement>('#letter-dialog');
 const letterHeading = $<HTMLHeadingElement>('#letter-heading');
 const letterText = $<HTMLElement>('#letter-text');
 const ctx = canvas.getContext('2d')!;
+fillIcons();
 const { width, height } = house.def.size;
 
 let showGraph = false;
@@ -152,7 +157,9 @@ function fitCanvas(): void {
   } else {
     // On a narrow screen the frame is as tall as we make it, so fit by width alone.
     const stacked = getComputedStyle(frameBox).flexGrow === '0';
-    const fit = Math.min(frameBox.clientWidth / width, stacked ? Infinity : frameBox.clientHeight / height);
+    // Leave room for the wooden frame round the canvas.
+    const border = stage.offsetWidth - stage.clientWidth + 4;
+    const fit = Math.min((frameBox.clientWidth - border) / width, stacked ? Infinity : (frameBox.clientHeight - border) / height);
     const whole = Math.floor(fit);
     scale = Math.max(1, whole >= 1 && whole >= fit * 0.85 ? whole : fit);
   }
@@ -224,7 +231,8 @@ reduceMotionInput.addEventListener('change', () => {
 });
 function showSoundControls(): void {
   const on = !sound.settings.muted;
-  soundToggle.textContent = on ? 'Sound on' : 'Sound off';
+  soundToggle.innerHTML = icon(on ? 'soundOn' : 'soundOff');
+  soundToggle.setAttribute('aria-label', on ? 'Sound is on' : 'Sound is off');
   soundToggle.setAttribute('aria-pressed', String(on));
   volumeInput.hidden = !on;
   volumeInput.value = String(Math.round(sound.settings.volume * 100));
@@ -518,8 +526,8 @@ function updateControls(): void {
   gamesButton.disabled = !ready;
   lettersButton.disabled = false;
   const unread = sim.letters.filter((l) => !l.read).length;
-  const label = unread > 0 ? `Letters (${unread} new)` : 'Letters';
-  if (lettersButton.textContent !== label) lettersButton.textContent = label;
+  const label = unread > 0 ? `Letters (${unread})` : 'Letters';
+  if (lettersLabel.textContent !== label) lettersLabel.textContent = label;
   lettersButton.classList.toggle('unread', unread > 0);
 
   const inv = sim.invitation;
@@ -533,6 +541,38 @@ function updateControls(): void {
   const s = sim.supplies;
   const text = `Fridge: ${s.food} meals, ${s.water} water · Dog food: ${s.dogFood} · ${s.records.length} record${s.records.length === 1 ? '' : 's'} · ${s.books} book${s.books === 1 ? '' : 's'}`;
   if (suppliesLine.textContent !== text) suppliesLine.textContent = text;
+  updateNeeds();
+}
+
+// How he's doing: a bar for each need, and mood. Only touched when a bar changes.
+const NEED_LABELS: Record<(typeof NEED_IDS)[number] | 'mood', string> = {
+  food: 'Food',
+  water: 'Water',
+  energy: 'Energy',
+  hygiene: 'Clean',
+  fun: 'Fun',
+  mood: 'Mood',
+};
+const needsBox = $<HTMLDivElement>('#needs');
+const needBars = ([...NEED_IDS, 'mood'] as const).map((id) => {
+  const segments = Array.from({ length: 10 }, () => h('span'));
+  const labelId = `need-${id}`;
+  const bar = h('div', { class: 'bar', role: 'meter', 'aria-labelledby': labelId, 'aria-valuemin': '0', 'aria-valuemax': '100' }, ...segments);
+  needsBox.append(h('span', { id: labelId }, NEED_LABELS[id]), bar);
+  return { id, bar, segments, shown: -1 };
+});
+function updateNeeds(): void {
+  const p = sim.person;
+  needsBox.classList.toggle('away', !(p.present && p.alive));
+  for (const n of needBars) {
+    const value = Math.round(n.id === 'mood' ? p.mood : p.needs[n.id]);
+    if (value === n.shown) continue;
+    n.shown = value;
+    const lit = Math.ceil(value / 10);
+    n.segments.forEach((s, i) => s.classList.toggle('on', i < lit));
+    n.bar.dataset.level = value >= 50 ? 'good' : value >= 25 ? 'ok' : 'bad';
+    n.bar.setAttribute('aria-valuenow', String(value));
+  }
 }
 
 // Saving: autosave every few seconds and whenever the tab is hidden. Hidden counts as away:
@@ -543,6 +583,9 @@ const farewellText = $<HTMLParagraphElement>('#farewell-text');
 const memorialDialog = $<HTMLDialogElement>('#memorial-dialog');
 const memorialList = $<HTMLDivElement>('#memorial-list');
 const importFile = $<HTMLInputElement>('#import-file');
+const settingsDialog = $<HTMLDialogElement>('#settings-dialog');
+$<HTMLButtonElement>('#settings-button').addEventListener('click', () => settingsDialog.showModal());
+$<HTMLButtonElement>('#settings-close').addEventListener('click', () => settingsDialog.close());
 
 function showSaveStatus(): void {
   saveStatus.textContent =

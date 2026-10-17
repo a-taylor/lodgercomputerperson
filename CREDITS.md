@@ -29,10 +29,15 @@ Changes: none to the artwork. The sprite sheets are used exactly as supplied; wh
 Everything else is original to this project:
 
 - Extra furniture the pack doesn't include (piano, fireplace, telephone table, dog bowl, record player, typewriter desk, computer desk, grandfather clock, games cabinet, wardrobe, exercise rug). These are drawn in code in `src/render/drawnSprites.ts`, using the pack's colour palette so they sit alongside it. They are not derived from the pack's image files.
+- The control icons (food, phone, gear and so on), drawn in code in `src/ui/icons.ts`.
 
 ### Sound
 
 All sound is original and synthesised in code with Web Audio (`src/audio/`): no sample files. The two record tunes are original.
+
+### Font
+
+[Pixelify Sans](https://github.com/eifetx/Pixelify-Sans), copyright 2021 The Pixelify Sans Project Authors, under the [SIL Open Font License 1.1](https://openfontlicense.org). Bundled from the `@fontsource/pixelify-sans` package.
 
 ## Licence obligations to remember
 
