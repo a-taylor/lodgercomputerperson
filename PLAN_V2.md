@@ -119,7 +119,7 @@ Each phase ends playable; the game never depends on the LLM.
 **9a. Safe to publish.** Penzilla art gitignored and moved to the private art repo; the build fails with a clear message when it's missing; CREDITS.md, in-game credits, `docs/art.md` and an MIT `LICENSE` (code only). History scrubbed with `git filter-repo` into a new public repo; the old private repo kept as `lodgercomputerperson-archive`.
 *Done when:* the public repo's history contains no Penzilla files (`git rev-list --objects --all`), and a clean checkout without the art gives the "art missing" error.
 
-**9b. Live on Pages.** Vite `base` from `VITE_BASE`; `ci.yml` (typecheck, unit tests, build) and `deploy-pages.yml`, both checking out the art with a read-only deploy key; `docs/deploy.md` started. Email the link to Penzilla.
+**9b. Live on Pages.** Vite `base` from `VITE_BASE`; `ci.yml` (typecheck, unit tests, build) and `deploy-pages.yml`, both checking out the art with a read-only deploy key; `docs/deploy.md` started. Link emailed to Penzilla (done 2026-10-18).
 *Done when:* CI is green, the Pages URL loads with all art, saves survive a reload, and the credits dialog shows every credit.
 
 **10. Client LLM interface, templates only.** `src/llm/` with one interface, the template implementation (wrapping `gatherFacts`/`writeLetter`), a circuit breaker, and an opt-in setting with the privacy notice. The parser's unmatched branch becomes async: he shows a thinking bubble and the result arrives as an ordinary player input on the tick it lands, so the sim stays deterministic.
