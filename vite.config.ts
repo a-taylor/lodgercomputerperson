@@ -24,5 +24,7 @@ export default defineConfig({
   build: { target: 'es2022' },
   test: {
     include: ['tests/**/*.test.ts'],
+    // Week-long sim runs take a few seconds locally and longer on CI runners.
+    testTimeout: 30_000,
   },
 });
