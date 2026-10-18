@@ -5,7 +5,9 @@
 **Graphics created by Penzilla Design.**
 House interior pack: [Platformer House Interior (Pixel Art)](https://penzilla.itch.io/house-interior), used under the Penzilla Design Standard Licence (`assets/penzilla/PenzillaDesign_StandardLicense.pdf`).
 
-Tenant: [Free Protagonist (Animated Character)](https://penzilla.itch.io/protagonist-character), also by Penzilla Design, same licence (`assets/penzilla-protagonist/`).
+Tenant: **based on graphics by Penzilla Design**, [Free Protagonist (Animated Character)](https://penzilla.itch.io/protagonist-character), same licence (`assets/penzilla-protagonist/`).
+
+All three art packs were bought on itch.io. The Penzilla files are not in this repository, because their licence doesn't allow sharing them; see `docs/art.md`.
 
 ### Edits to the Penzilla assets
 
@@ -43,6 +45,7 @@ All sound is original and synthesised in code with Web Audio (`src/audio/`): no 
 
 - Keep the credit line above visible wherever the game credits people.
 - If any Penzilla image is modified, list the change under "Edits" above.
-- Don't redistribute the raw pack files (the repo must stay private while they're in it).
-- If the game is ever made publicly available, send a link to PenzillaDesign@gmail.com.
+- Don't redistribute the Penzilla pack files: they are kept out of the public repo (gitignored, pulled from a private repo at build time). Serving them as part of the deployed game is allowed.
+- Once the game is publicly available, send a link to PenzillaDesign@gmail.com.
+- The dog sprites are CC BY-ND, so they can stay in the public repo unchanged. NVPH Studio has said edits for use in your own game are fine as long as the edited files aren't shared on their own; list any edits under "Changes" above.
 - Don't use the pack's images to make AI or machine-learning datasets or models.

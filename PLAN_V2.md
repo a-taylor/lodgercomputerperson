@@ -1,6 +1,6 @@
 # Lodger Computer Person: plan v2 (LLM features and deployment)
 
-Status: draft. Finish v1 first (PLAN.md; phase 7 polish is under way). Nothing here changes the v1 acceptance criteria. Section 7 lists what v1 already has and the few changes worth making before v2.
+Status: v1 and v1.5 are done (PLAN.md section 9). Phases and acceptance criteria are in section 8. Section 7 lists what v1 already has and what was deferred to v2.
 
 ## 1. Principle
 
@@ -75,15 +75,21 @@ There is no `.github/` yet, and Playwright is not in `package.json` yet.
 7. Add the three workflows; push; verify the Pages site and Worker both update.
 8. Set `VITE_LCP_API_URL` for the Pages build; test letter generation end to end, then with the Worker deliberately failing to confirm the template fallback.
 
-## 6. Open decisions
+## 6. Decisions
 
-- Gemini model and the current free-tier limits and terms; check at build time, they change often.
-- Whether free-tier use of prompts for Google's product improvement is acceptable, and what the opt-in notice says.
-- Rate limiting: Cloudflare's rate limiting binding versus KV, and how to identify a player anonymously (random id stored in the save).
-- Hard daily cap in the Worker so a shared quota cannot be exhausted by one player.
-- Whether to add a "bring your own key" setting.
-- Public repo or private; trademark check before any public release (PLAN.md section 7).
-- How to treat time phrases in batched requests (section 3b).
+Decided (2026-10-18):
+
+- Public repo. The Penzilla art can't be redistributed, so it lives in a private repo (`lodgercomputerperson-art`) that CI pulls in, and it is scrubbed from the public history. See `docs/art.md` and CREDITS.md.
+- Time phrases in batched requests ("before bed") are ignored; they add nothing to the queue.
+- Rate limiting: Cloudflare's rate limiting binding keyed on a random player id stored in the save, plus a global daily cap counted in KV (approximate is fine).
+- No "bring your own key" in v2.
+- Dog activities move to the optional extras (phase 13).
+- Trademark: the product uses only "Lodger Computer Person"; "Little Computer People" appears only in PLAN.md as tribute context.
+
+Still open, decide when phase 11 starts:
+
+- Gemini model and the current free-tier limits and terms; they change often.
+- Whether free-tier use of prompts for Google's product improvement is acceptable; the opt-in notice quotes that term as it stands.
 
 ## 7. Impact on v1
 
@@ -105,3 +111,25 @@ Deferred from v1 to v2:
 - Opt-in browser notification when he writes a letter.
 - Drag-and-drop items onto the house (buttons already cover deliveries).
 - Seasonal touches from the real date.
+
+## 8. Phases
+
+Each phase ends playable; the game never depends on the LLM.
+
+**9a. Safe to publish.** Penzilla art gitignored and moved to the private art repo; the build fails with a clear message when it's missing; CREDITS.md, in-game credits, `docs/art.md` and an MIT `LICENSE` (code only). History scrubbed with `git filter-repo` into a new public repo; the old private repo kept as `lodgercomputerperson-archive`.
+*Done when:* the public repo's history contains no Penzilla files (`git rev-list --objects --all`), and a clean checkout without the art gives the "art missing" error.
+
+**9b. Live on Pages.** Vite `base` from `VITE_BASE`; `ci.yml` (typecheck, unit tests, build) and `deploy-pages.yml`, both checking out the art with a read-only deploy key; `docs/deploy.md` started. Email the link to Penzilla.
+*Done when:* CI is green, the Pages URL loads with all art, saves survive a reload, and the credits dialog shows every credit.
+
+**10. Client LLM interface, templates only.** `src/llm/` with one interface, the template implementation (wrapping `gatherFacts`/`writeLetter`), a circuit breaker, and an opt-in setting with the privacy notice. The parser's unmatched branch becomes async: he shows a thinking bubble and the result arrives as an ordinary player input on the tick it lands, so the sim stays deterministic.
+*Done when:* tests with a fake remote cover success, timeout, 429 (breaker opens) and junk output (dropped).
+
+**11. Worker and `/api/intent`.** `worker/` with origin allowlist, input and output caps, timeout, intent whitelist, per-player rate limit, global daily cap; `deploy-worker.yml`; the rest of `docs/deploy.md`.
+*Done when:* "why don't you make dinner and then watch tv" queues two items locally and live, and with the Worker down the game falls back to "confused" as before.
+
+**12. LLM letters and `/api/letter`.** The template letter is written at once; the model's text replaces it if it arrives before the letter is opened, and never after. Opt-in browser notification for new letters.
+*Done when:* a letter survives reload unchanged, and fallback works with the Worker down.
+
+**13. Extras (optional, explore later).** Two-actor dog activities (play with the dog, fetch; needs two-actor support in the behaviour system), PWA, seasonal touches, drag-and-drop, short in-character replies.
+

@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Penzilla art is kept in a private repo (licence forbids redistribution); see docs/art.md.
+      - uses: actions/checkout@v4
+        with:
+          repository: a-taylor/lodgercomputerperson-art
+          ssh-key: ${{ secrets.ART_DEPLOY_KEY }}
+          path: .art
+      - run: cp -R .art/penzilla .art/penzilla-protagonist assets/
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build

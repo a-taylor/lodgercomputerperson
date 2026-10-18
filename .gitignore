@@ -3,3 +3,7 @@ dist
 .DS_Store
 test-results/
 playwright-report/
+# Penzilla art: licence forbids redistribution. Kept in a private repo; see docs/art.md.
+assets/penzilla/
+assets/penzilla-protagonist/
+.art/

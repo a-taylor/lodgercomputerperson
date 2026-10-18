@@ -101,4 +101,4 @@ Sources: Wikipedia, C64-Wiki, StrategyWiki, ST News review, Retro365, The Oasis 
 - A Food/Water choice when clicking the fridge; the teapot and mug are small targets, and the dog often stands over its bowl.
 - The "Pat" hand icon is the weakest icon.
 
-**Next:** v2, LLM features and deployment (PLAN_V2.md).
+**Next:** v2, LLM features and deployment. Phases are in PLAN_V2.md section 8; 9a (making the repo safe to publish) is under way.
