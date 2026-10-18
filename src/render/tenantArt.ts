@@ -30,6 +30,8 @@ export interface LieSpot {
   height: number;
   headRight?: boolean;
   dx?: number;
+  /** Tucked in: his body is drawn in the blanket's colour, a bump under the covers. */
+  blanket?: string;
 }
 
 const SIZE = 24;
@@ -104,6 +106,14 @@ function regionsFor(pixels: Uint8ClampedArray, sheetW: number, frame: number): U
   return out;
 }
 
+/** Closed eyes on the lying frame (head to the right): two short dashes. */
+const SLEEPING_EYES: [number, number][] = [
+  [16, 19],
+  [17, 19],
+  [19, 19],
+  [20, 19],
+];
+
 let scratch: HTMLCanvasElement | null = null;
 
 function rgb(hex: string): [number, number, number] {
@@ -153,10 +163,11 @@ export function drawTenantSprite(ctx: CanvasRenderingContext2D, sheet: TenantShe
   const oy = Math.floor(frame / COLS) * SIZE;
   let skin = mix(rgb(colours.skin), [255, 255, 255], 0.15);
   if (pose.sick) skin = mix(skin, [120, 190, 90], 0.45);
+  const blanket = spot?.blanket ? rgb(spot.blanket) : null;
   const tints: Record<number, [number, number, number]> = {
     [SKIN]: skin,
-    [SHIRT]: pose.bare ? skin : rgb(colours.shirt),
-    [LEGS]: rgb(colours.trousers),
+    [SHIRT]: blanket ?? (pose.bare ? skin : rgb(colours.shirt)),
+    [LEGS]: blanket ?? rgb(colours.trousers),
   };
   const regions = sheet.regions[frame]!;
   for (let y = 0; y < SIZE; y++) {
@@ -173,6 +184,13 @@ export function drawTenantSprite(ctx: CanvasRenderingContext2D, sheet: TenantShe
       img.data[o + 1] = tint[1] * g;
       img.data[o + 2] = tint[2] * b;
       img.data[o + 3] = a;
+    }
+  }
+  // The lying frame has no face; asleep, give him closed eyes so he reads as a sleeper.
+  if (lying && pose.asleep) {
+    for (const [ex, ey] of SLEEPING_EYES) {
+      const o = (ey * SIZE + ex) * 4;
+      img.data.set([52, 1, 41, 255], o);
     }
   }
   s.putImageData(img, 0, 0);

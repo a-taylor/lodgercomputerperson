@@ -353,7 +353,11 @@
       "room": "living",
       "x": 104,
       "art": "pack:Furniture/SoftChair",
-      "use": "living.armchair"
+      "use": "living.armchair",
+      "seat": {
+        "height": 7,
+        "facing": -1
+      }
     },
     {
       "id": "floor-lamp",
@@ -579,7 +583,8 @@
       "lie": {
         "height": 9,
         "headRight": true,
-        "dx": -3
+        "dx": -1,
+        "blanket": "#7783f7"
       }
     },
     {

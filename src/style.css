@@ -220,7 +220,7 @@ canvas {
 /* Set from the OS preference, or the player's choice in settings. */
 .reduce-motion #stage.knocking { animation: none; }
 .reduce-motion button.card.held, .reduce-motion button:active:not(:disabled) { transform: none; }
-#bubble {
+#bubble, .bubble {
   position: absolute;
   transform: translate(-50%, -100%);
   max-width: 220px;
@@ -236,7 +236,7 @@ canvas {
   white-space: normal;
   width: max-content;
 }
-#bubble::after {
+#bubble::after, .bubble::after {
   content: '';
   position: absolute;
   left: 50%;

@@ -92,6 +92,17 @@ export function drawHouse(ctx: CanvasRenderingContext2D, house: House, art: Art,
   if (showGraph) drawGraph(ctx, house);
 }
 
+/** Where a piece of furniture is drawn, in house pixels (for clicking on it). Lamps have none. */
+export function furnitureBounds(house: House, art: Art, f: FurnitureDef): { x: number; y: number; w: number; h: number } | null {
+  if (f.art === 'lamp') return null;
+  const [source, key] = f.art.split(':') as ['pack' | 'drawn', string];
+  const img = source === 'pack' ? need(art.pack, key) : art.drawn[key as DrawnKey]?.[0];
+  if (!img) return null;
+  const floor = house.def.floors.find((fl) => fl.id === house.def.rooms.find((r) => r.id === f.room)!.floor)!;
+  const bottom = floor.floorY - (f.elevation ?? 0);
+  return { x: f.x, y: bottom - img.height, w: img.width, h: img.height };
+}
+
 function drawFurniture(ctx: CanvasRenderingContext2D, art: Art, f: FurnitureDef, floorY: number, ceilingY: number, tick: number): void {
   const bottom = floorY - (f.elevation ?? 0);
   if (f.art === 'lamp') {

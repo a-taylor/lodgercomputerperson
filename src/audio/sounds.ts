@@ -115,6 +115,28 @@ export class Sounds {
     this.tone(70, this.now + 0.35, 0.15, { type: 'sine', gain: 0.4 });
   }
 
+  /** A bark: a growly burst that drops in pitch. Smaller dogs yap higher. */
+  woof(pitch: number): void {
+    for (const [start, len] of [[0, 0.16], [0.22, 0.13]] as const) {
+      const at = this.now + start;
+      const osc = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(pitch * 1.4, at);
+      osc.frequency.exponentialRampToValueAtTime(pitch * 0.7, at + len);
+      g.gain.setValueAtTime(0, at);
+      g.gain.linearRampToValueAtTime(0.12, at + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + len);
+      const f = this.ctx.createBiquadFilter();
+      f.type = 'lowpass';
+      f.frequency.value = pitch * 6;
+      osc.connect(f).connect(g).connect(this.master);
+      osc.start(at);
+      osc.stop(at + len + 0.02);
+      this.noise(at, len * 0.6, { gain: 0.15, filter: 'bandpass', freq: pitch * 4, q: 2 });
+    }
+  }
+
   pat(): void {
     this.tone(660, this.now, 0.15, { type: 'triangle', gain: 0.12 });
     this.tone(880, this.now + 0.09, 0.22, { type: 'triangle', gain: 0.12 });

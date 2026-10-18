@@ -94,7 +94,7 @@ Already in place:
 
 Worth doing before or alongside v2:
 
-- Replace the single `state.pending` slot with an ordered queue, with a save migration. PLAN.md phase 8 now lists this, along with plain-parser support for "then" chains. This is part of v1.
+- ~~Replace the single `state.pending` slot with an ordered queue, with a save migration, and "then" chains in the plain parser.~~ Done in v1 (`state.queue`, save version 2).
 - Make the parser's unmatched branch able to await an async fallback without blocking the sim.
 - Make Vite `base` configurable.
 

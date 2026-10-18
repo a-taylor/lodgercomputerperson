@@ -1,4 +1,4 @@
-import { drawFront, drawHouse, loadArt } from './render/canvas';
+import { drawFront, drawHouse, furnitureBounds, loadArt } from './render/canvas';
 import { drawDogSprite, loadDogSheets } from './render/dogArt';
 import { SoundDirector, type SoundSettings } from './audio/director';
 import { createLighting, roomAt } from './render/lighting';
@@ -75,13 +75,23 @@ const seed = sim.seed;
 const MIN_AWAY_MS = 60_000;
 let away: AwaySummary | null = null;
 if (loaded && Date.now() - loaded.lastSeen > MIN_AWAY_MS) away = catchUp(sim, world, Date.now() - loaded.lastSeen);
-const timeScale = nearestSpeed(speedParam >= 1 ? speedParam : timeScaleOf(sim));
+// If the tab was closed while slowed down for being idle, come back at the speed from before.
+const IDLE_SPEED_KEY = 'lcp-speed-before-idle';
+function speedBeforeIdle(): number | null {
+  try {
+    return Number(localStorage.getItem(IDLE_SPEED_KEY)) || null;
+  } catch {
+    return null;
+  }
+}
+const timeScale = nearestSpeed(speedParam >= 1 ? speedParam : (speedBeforeIdle() ?? timeScaleOf(sim)));
 if (timeScale !== timeScaleOf(sim)) step(sim, world, [{ type: 'setSpeed', timeScale }]);
 
 const $ = <T extends HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
 const canvas = $<HTMLCanvasElement>('#house');
 const stage = $<HTMLDivElement>('#stage');
 const bubble = $<HTMLDivElement>('#bubble');
+const dogBubble = $<HTMLDivElement>('#dog-bubble');
 const caption = $<HTMLDivElement>('#caption');
 const status = $<HTMLSpanElement>('#status');
 // The clock sits outside the live region, so screen readers hear what he does, not every minute.
@@ -376,19 +386,68 @@ function dayLength(scale: number): string {
 }
 
 function showSpeed(scale: number): void {
-  speedOutput.textContent = `${scale}× · ${dayLength(scale)}`;
-  speedInput.setAttribute('aria-valuetext', `${scale} times, ${dayLength(scale)}`);
+  const note = idleFrom !== null ? ' (you were away)' : '';
+  speedOutput.textContent = `${scale}× · ${dayLength(scale)}${note}`;
+  speedInput.setAttribute('aria-valuetext', `${scale} times, ${dayLength(scale)}${note}`);
 }
-showSpeed(timeScale);
+
+function setSpeed(scale: number): void {
+  // Straight into the queue: speed works during moving in too, and isn't company for him.
+  pending.push({ type: 'setSpeed', timeScale: scale });
+  speedInput.value = String(SPEEDS.indexOf(scale));
+  showSpeed(scale);
+}
 
 speedInput.addEventListener('input', () => {
   const scale = SPEEDS[Number(speedInput.value)]!;
-  // Straight into the queue: speed works during moving in too, and isn't company for him.
-  pending.push({ type: 'setSpeed', timeScale: scale });
-  showSpeed(scale);
+  idleFrom = null;
+  forgetIdleSpeed();
+  setSpeed(scale);
   params.set('speed', String(scale));
   history.replaceState(null, '', `?${params}`);
 });
+
+// Left alone with the tab open (overnight, say), time drops to real time, the same pace as
+// when the tab is closed, so he isn't left for days on end. Any click or key brings the speed
+// back. ?idle=60 sets the wait in seconds (dev).
+const IDLE_MS = (Number(params.get('idle')) || 30 * 60) * 1000;
+let lastInputAt = performance.now();
+/** The speed to go back to, while slowed down for being idle. */
+let idleFrom: number | null = null;
+function forgetIdleSpeed(): void {
+  try {
+    localStorage.removeItem(IDLE_SPEED_KEY);
+  } catch {
+    // Nothing to forget.
+  }
+}
+function noticeInput(): void {
+  lastInputAt = performance.now();
+  if (idleFrom === null) return;
+  const scale = idleFrom;
+  idleFrom = null;
+  forgetIdleSpeed();
+  setSpeed(scale);
+}
+for (const type of ['pointerdown', 'keydown', 'wheel', 'touchstart']) addEventListener(type, noticeInput, { capture: true, passive: true });
+// Coming back to the tab counts as being here.
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) lastInputAt = performance.now();
+});
+setInterval(() => {
+  if (idleFrom !== null || document.hidden || performance.now() - lastInputAt < IDLE_MS) return;
+  const scale = timeScaleOf(sim);
+  if (scale <= 1) return;
+  idleFrom = scale;
+  try {
+    localStorage.setItem(IDLE_SPEED_KEY, String(scale));
+  } catch {
+    // It comes back at real time instead; fine.
+  }
+  setSpeed(1);
+}, 5000);
+showSpeed(timeScale);
+forgetIdleSpeed();
 
 talk.addEventListener('submit', (e) => {
   e.preventDefault();
@@ -398,21 +457,56 @@ talk.addEventListener('submit', (e) => {
   talkInput.value = '';
 });
 
-/** Clicking on him is a pat on the head. */
-canvas.addEventListener('click', (e) => {
-  const p = sim.person;
-  if (!p.present) return;
-  const rect = canvas.getBoundingClientRect();
-  const x = ((e.clientX - rect.left) / rect.width) * width;
-  const y = ((e.clientY - rect.top) / rect.height) * height;
-  if (Math.abs(x - p.x) <= 7 && y <= p.y + 2 && y >= p.y - 24) send({ type: 'pat' });
+// Clicking in the house: pat him, make the dog bark, or use a piece of furniture (the same as
+// the buttons in the panel).
+interface Hotspot {
+  label: string;
+  act: () => void;
+}
+const FURNITURE_ACTIONS: Record<string, Hotspot> = {
+  fridge: { label: 'Fridge: deliver food', act: () => sendSpec('deliver:food') },
+  teapot: { label: 'Teapot: deliver water', act: () => sendSpec('deliver:water') },
+  mug: { label: 'Mug: deliver water', act: () => sendSpec('deliver:water') },
+  'dog-bowl': { label: 'Dog bowl: deliver dog food', act: () => sendSpec('deliver:dogFood') },
+  'record-player': { label: 'Record player: deliver a record', act: () => sendSpec('deliver:record') },
+  bookshelf: { label: 'Bookshelf: deliver a book', act: () => sendSpec('deliver:book') },
+  'bookshelf-study': { label: 'Bookshelf: deliver a book', act: () => sendSpec('deliver:book') },
+  phone: { label: 'Phone: ring him', act: () => sendSpec('phone') },
+  clock: { label: 'Clock: set off the alarm', act: () => sendSpec('alarm') },
+  'games-cabinet': { label: 'Games cabinet: ask him to play', act: () => toggleGamePicker() },
+  'front-door': { label: 'Front door: read his letters', act: () => openLetters() },
+};
+const furnitureSpots = house.def.furniture.flatMap((f) => {
+  const spot = FURNITURE_ACTIONS[f.id];
+  const box = spot && furnitureBounds(house, art, f);
+  return box ? [{ ...spot, box }] : [];
 });
-canvas.addEventListener('mousemove', (e) => {
-  const p = sim.person;
+let woofUntil = 0;
+
+function hotspotAt(e: MouseEvent): Hotspot | null {
   const rect = canvas.getBoundingClientRect();
   const x = ((e.clientX - rect.left) / rect.width) * width;
   const y = ((e.clientY - rect.top) / rect.height) * height;
-  canvas.style.cursor = p.present && Math.abs(x - p.x) <= 7 && y <= p.y + 2 && y >= p.y - 24 ? 'pointer' : 'default';
+  const { person: p, dog } = sim;
+  if (p.present && Math.abs(x - p.x) <= 7 && y <= p.y + 2 && y >= p.y - 24) return { label: `Pat ${p.identity.name}`, act: () => send({ type: 'pat' }) };
+  if (dog.present && Math.abs(x - dog.x) <= 10 && y <= dog.y + 1 && y >= dog.y - 14) {
+    return { label: `${dog.identity.name}`, act: woof };
+  }
+  if (!movedIn() || !p.alive) return null;
+  return furnitureSpots.find(({ box: b }) => x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h) ?? null;
+}
+
+function woof(): void {
+  sound.woof(sim.dog.identity.size);
+  woofUntil = performance.now() + 1200;
+  logLine(`${sim.dog.identity.name} barks: Woof!`);
+}
+
+canvas.addEventListener('click', (e) => hotspotAt(e)?.act());
+canvas.addEventListener('mousemove', (e) => {
+  const spot = hotspotAt(e);
+  canvas.style.cursor = spot ? 'pointer' : 'default';
+  canvas.title = spot?.label ?? '';
 });
 
 intro.addEventListener('submit', (e) => {
@@ -480,7 +574,14 @@ function logLine(text: string): void {
   while (speechLog.childElementCount > 5) speechLog.firstElementChild!.remove();
 }
 
-function updateOverlays(px: number, py: number): void {
+function updateOverlays(px: number, py: number, dx: number, dy: number): void {
+  const barking = sim.dog.present && performance.now() < woofUntil;
+  dogBubble.hidden = !barking;
+  if (barking) {
+    dogBubble.style.left = `${dx * scale}px`;
+    dogBubble.style.top = `${(dy - 18) * scale}px`;
+  }
+
   const speech = sim.speech;
   if (speech && speech.seq !== lastSpeechSeq) {
     lastSpeechSeq = speech.seq;
@@ -745,10 +846,12 @@ function frame(now: number): void {
     const using = house.def.furniture.find((f) => f.use === p.at);
     // Sitting in the bath: lower him in, then draw the tub's front over him.
     const inside = pose === 'sit' && p.path.length === 0 && using?.sitIn ? using : null;
+    // Sitting in a chair: up on the seat, facing out.
+    const seat = pose === 'sit' && p.path.length === 0 ? using?.seat : undefined;
     const figure: TenantPose = {
-      x: px,
-      y: py - (inside?.sitIn!.seatHeight ?? 0),
-      facing: p.facing,
+      x: px + (seat?.dx ?? 0),
+      y: py - (inside?.sitIn!.seatHeight ?? seat?.height ?? 0),
+      facing: seat?.facing ?? p.facing,
       walking: p.path.length > 0,
       pose,
       lie: using?.lie,
@@ -767,7 +870,7 @@ function frame(now: number): void {
   // Reduced motion: lights switch rather than fade.
   lighting.draw(ctx, hour, awake ? roomAt(house, px, py) : null, reduceMotion ? Infinity : dt);
   soundCaption = sound.update(sim, world, px, py);
-  updateOverlays(px, py);
+  updateOverlays(px, py, lerp(prev.dx, dog.x), lerp(prev.dy, dog.y));
   updateControls();
   updateGame();
   updateFarewell();

@@ -74,3 +74,31 @@ Sources: Wikipedia, C64-Wiki, StrategyWiki, ST News review, Retro365, The Oasis 
 ## 8. First prompt for Claude Code
 
 "Read PLAN.md. The project is called Lodger Computer Person. Implement phase 1 only. Use TypeScript and Vite, no UI framework. Put house layout and furniture in JSON. Keep the simulation deterministic and separate from rendering. Add Vitest tests for pathing and seeded determinism. Stop when the phase 1 acceptance criteria pass and summarise what you did."
+
+## 9. Status (updated 2026-10-18)
+
+**v1 is complete.** Phases 1 to 8 are done, including phase 7 (day/night lighting, synthesised Web Audio sound with captions, accessibility pass with Lighthouse a11y 100, phone check, Playwright smoke tests with axe) and the phase 8 request queue with "then" chains. Run `npm test` (Vitest) and `npm run test:e2e` (Playwright in the installed Chrome; the desktop smoke test takes about 2.5 minutes because moving in runs in real time).
+
+**v1.5 (UI refresh and touches), done:**
+
+- Retro pixel UI: Pixelify Sans (self-hosted, OFL), wood-and-cream palette taken from the house, bevelled buttons, wooden sliders, code-drawn pixel icons (`src/ui/icons.ts`). Light and dark themes.
+- Layout: a top bar (clock, status, speed, sound, settings gear) over the house and a side panel of boards (Talk, Look after him, How he's doing, Larder). Options, saving, shortcuts and credits live in a settings dialog.
+- Needs and mood are visible as segmented bars (the owner chose to show them rather than keep them hidden as in the original).
+- He sits up on the armchair (`seat` on furniture in `house.json`) and is tucked into bed (body drawn in the blanket colour, closed eyes when asleep).
+- Clicking in the house: him (pat), the dog (barks, "Woof!" bubble), fridge (food), teapot or mug (water), dog bowl, record player, bookshelves, phone, grandfather clock (alarm), games cabinet, front door (letters). Same actions as the panel buttons.
+- Idle slowdown: after 30 minutes with no input, time drops to 1x (the same pace as a closed tab) and the previous speed comes back on any click or key. `?idle=60` sets the wait in seconds. Added after a tenant died when the tab was left open overnight at 30x.
+
+**Decisions recorded:**
+
+- Two-actor dog activities, PWA, letter notifications, drag-and-drop and seasonal touches moved to v2 (PLAN_V2.md section 7).
+- Sound is original and synthesised; no sample files. Muted by default.
+- The owner isn't fussed about the Lighthouse PWA check.
+- Art comes from off-the-shelf packs plus code-drawn sprites; the owner doesn't draw (see CREDITS.md for licences).
+
+**Small ideas not done (optional):**
+
+- Other sitting spots (kitchen table, TV, piano, typewriter, games table) still have him on the floor; each needs a chair or a `seat`.
+- A Food/Water choice when clicking the fridge; the teapot and mug are small targets, and the dog often stands over its bowl.
+- The "Pat" hand icon is the weakest icon.
+
+**Next:** v2, LLM features and deployment (PLAN_V2.md).

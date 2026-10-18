@@ -41,13 +41,21 @@ export interface FurnitureDef {
   art: string;
   /** The node where he uses it. Decorations don't have one. */
   use?: string;
-  /** For beds: where he lies (height off the floor, pillow end, sideways nudge). */
-  lie?: { height: number; headRight?: boolean; dx?: number };
+  /**
+   * For beds: where he lies (height off the floor, pillow end, sideways nudge), and the blanket's
+   * colour, which his body takes so he's tucked in with only his head showing.
+   */
+  lie?: { height: number; headRight?: boolean; dx?: number; blanket?: string };
   /**
    * For things he sits inside, like the bath: how high he sits, and the image row where the front
    * begins. The front is drawn again over him so he's in it, not on it.
    */
   sitIn?: { seatHeight: number; frontFromRow: number };
+  /**
+   * For chairs he sits on: the seat's height off the floor, which way he faces (towards the open
+   * side, away from the back), and a sideways nudge so he's against the back.
+   */
+  seat?: { height: number; facing: 1 | -1; dx?: number };
   /**
    * Lamps and fires: where the light comes from (offset from the art's top-left), how far it
    * reaches, and whether it's always on (a fire) or only while he's in the room.

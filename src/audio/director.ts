@@ -17,7 +17,7 @@ const AMBIENT_AT: Record<string, Ambient> = {
   'kitchen.stove': 'sizzle',
 };
 
-export const CAPTIONS: Record<Ambient | 'door' | 'alarm', string> = {
+export const CAPTIONS: Record<Ambient | 'door' | 'alarm' | 'woof', string> = {
   piano: '♪ piano ♪',
   record: '♪ a record plays ♪',
   tv: '*TV chatter*',
@@ -27,6 +27,7 @@ export const CAPTIONS: Record<Ambient | 'door' | 'alarm', string> = {
   sizzle: '*sizzling*',
   door: '*door opens and shuts*',
   alarm: '*BRRRING*',
+  woof: '*woof woof*',
 };
 
 /** Two little records, as [melody note or null for a rest] per eighth, and a bass note per quarter. */
@@ -105,6 +106,12 @@ export class SoundDirector {
   cue(name: 'alarm'): void {
     this.event = { caption: CAPTIONS[name], untilMs: performance.now() + 1500 };
     if (this.playing) this.sounds!.alarm();
+  }
+
+  /** The dog barks when you click it. */
+  woof(size: 'small' | 'medium' | 'large'): void {
+    this.event = { caption: CAPTIONS.woof, untilMs: performance.now() + 1200 };
+    if (this.playing) this.sounds!.woof({ small: 520, medium: 330, large: 210 }[size]);
   }
 
   private get playing(): boolean {

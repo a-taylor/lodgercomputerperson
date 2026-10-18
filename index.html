@@ -28,8 +28,9 @@
       <section id="view" aria-label="The house">
         <div id="frame">
           <div id="stage">
-            <canvas id="house" width="320" height="240" aria-label="Cutaway view of the house. Click him to pat him on the head."></canvas>
-            <div id="bubble" hidden></div>
+            <canvas id="house" width="320" height="240" aria-label="Cutaway view of the house. Click him to pat him, the dog to make it bark, or the fridge, phone, bookshelves and other things to use them. The buttons in the panel do the same."></canvas>
+            <div id="bubble" class="bubble" hidden></div>
+            <div id="dog-bubble" class="bubble" hidden aria-hidden="true">Woof!</div>
             <div id="caption" hidden aria-hidden="true"></div>
             <button type="button" id="fullscreen" aria-label="Full screen" title="Full screen (Alt+Enter)"><span data-icon="fullscreen"></span></button>
           </div>
@@ -129,7 +130,7 @@
         </p>
         <p class="small">
           URL: <code>?seed=123</code>, <code>?speed=1</code> (starting speed; default 30), <code>?quick</code>, <code>?movedIn</code>, <code>?hour=14</code> (new game's starting time),
-          <code>?fresh</code> (ignore the save and start again; it will be overwritten).
+          <code>?fresh</code> (ignore the save and start again; it will be overwritten). After 30 minutes with no clicks or keys, time slows to real time until you&apos;re back (<code>?idle=60</code> sets the wait in seconds).
           Dev: <code>?zoom=4&amp;x=0&amp;y=0</code> close-up, <code>?debug</code> exposes <code>lcp</code> in the console.
         </p>
         <h3>Credits</h3>
