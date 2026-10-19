@@ -1,0 +1,9 @@
+// The /api/intent Worker (worker/index.ts). Run it locally with `npm run dev:worker`; see docs/llm.md.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "lodgercomputerperson-intent",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-10-01",
+  // Logs from deployed requests, viewable in the dashboard.
+  "observability": { "enabled": true }
+}

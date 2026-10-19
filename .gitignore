@@ -10,3 +10,6 @@ assets/penzilla-protagonist/
 
 # Your Gemini key for the dev server (docs/llm.md)
 .env*.local
+
+# Wrangler's local state (wrangler dev)
+.wrangler/
