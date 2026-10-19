@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "dev:worker": "wrangler dev"
+    "dev:worker": "wrangler dev",
+    "deploy:worker": "wrangler deploy"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",

@@ -1,5 +1,5 @@
 // Asks Gemini what a line the parser couldn't read was asking for. This runs in the Worker
-// (worker/index.ts), never in the browser, so the player's key stays on their machine. It
+// (worker/index.ts), never in the browser, so the player's key stays out of the page. It
 // owns the prompt; the browser only sends the typed line and the dog's name.
 import { GAME_KINDS, GAME_NAMES } from '../sim/games/types';
 import { MAX_INTENT_ITEMS, MODEL_INTENTS, ROOMS, validateIntents, type IntentItem, type ModelIntent } from '../sim/parser';
