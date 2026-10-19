@@ -18,6 +18,8 @@ The LLM handles language only. The deterministic sim decides what he does, how h
 
 ## 3. Architecture
 
+> **Changed 2026-10-19:** this is a learning project, not a published one. There is no hosted Worker: each player runs `npm run dev` with their own Gemini key in `.env.local`, and the Vite dev server answers `/api/intent` (see `docs/llm.md`). Sections 3 to 5 below describe the original hosted design; the Worker, rate limits, daily cap and CORS parts no longer apply. GitHub Pages stays up as an LLM-free demo.
+
 - Client has an `llm` module with one interface and a template implementation. The remote implementation sits behind it, with a circuit breaker: after a failure or a 429, stop calling for a while and use templates.
 - Worker endpoints: `POST /api/letter`, `POST /api/intent`, `POST /api/reply`.
 - The client sends small structured facts and the typed line, never the save file and never a prompt. The Worker owns the prompts. Otherwise anyone could use the Worker as a free general LLM proxy on our key.
@@ -88,8 +90,7 @@ Decided (2026-10-18):
 
 Still open, decide when phase 11 starts:
 
-- Gemini model and the current free-tier limits and terms; they change often.
-- Whether free-tier use of prompts for Google's product improvement is acceptable; the opt-in notice quotes that term as it stands.
+- Settled 2026-10-19: the owner's own Gemini key, default model `gemini-3.5-flash-lite` (override with `GEMINI_MODEL`). Each player's use is under their own key and Google's terms; the notice and `docs/llm.md` say what's sent.
 
 ## 7. Impact on v1
 
@@ -123,12 +124,12 @@ Each phase ends playable; the game never depends on the LLM.
 *Done when:* CI is green, the Pages URL loads with all art, saves survive a reload, and the credits dialog shows every credit.
 
 **10. Client LLM interface, templates only.** `src/llm/` with one interface, the template implementation (wrapping `gatherFacts`/`writeLetter`), a circuit breaker, and an opt-in setting with the privacy notice. The parser's unmatched branch becomes async: he shows a thinking bubble and the result arrives as an ordinary player input on the tick it lands, so the sim stays deterministic.
-*Done when:* tests with a fake remote cover success, timeout, 429 (breaker opens) and junk output (dropped).
+*Done when:* tests with a fake remote cover success, timeout, 429 (breaker opens) and junk output (dropped). **Done 2026-10-18.** The letter method joins the interface in phase 12, where it's first used. The setting appears only when `VITE_LCP_API_URL` is set.
 
-**11. Worker and `/api/intent`.** `worker/` with origin allowlist, input and output caps, timeout, intent whitelist, per-player rate limit, global daily cap; `deploy-worker.yml`; the rest of `docs/deploy.md`.
-*Done when:* "why don't you make dinner and then watch tv" queues two items locally and live, and with the Worker down the game falls back to "confused" as before.
+**11. `/api/intent` with your own key.** ~~Hosted Worker~~ (see the note in section 3). The Vite dev server answers `POST /api/intent` when `GEMINI_API_KEY` is in `.env.local`; `src/llm/gemini.ts` owns the prompt and a response schema limited to the fixed intents. Setup in `docs/llm.md`. **Built 2026-10-19;** unit tests and a run against Google with an invalid key (falls back to "Hmm?") pass. Still to check with a real key: that typical messy lines come back right.
+*Done when:* "why don't you make dinner and then watch tv" queues two items with a real key, and with the key wrong or the network off he falls back to "confused".
 
-**12. LLM letters and `/api/letter`.** The template letter is written at once; the model's text replaces it if it arrives before the letter is opened, and never after. Opt-in browser notification for new letters.
+**12. LLM letters and `/api/letter`** (also served by the dev server). The template letter is written at once; the model's text replaces it if it arrives before the letter is opened, and never after. Opt-in browser notification for new letters.
 *Done when:* a letter survives reload unchanged, and fallback works with the Worker down.
 
 **13. Extras (optional, explore later).** Two-actor dog activities (play with the dog, fetch; needs two-actor support in the behaviour system), PWA, seasonal touches, drag-and-drop, short in-character replies.

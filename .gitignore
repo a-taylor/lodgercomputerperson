@@ -7,3 +7,6 @@ playwright-report/
 assets/penzilla/
 assets/penzilla-protagonist/
 .art/
+
+# Your Gemini key for the dev server (docs/llm.md)
+.env*.local

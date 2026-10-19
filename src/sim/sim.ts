@@ -6,6 +6,7 @@ import { cleanName, generateIdentity, traitAffinity, type Identity } from './ide
 import {
   deliver,
   handleSay,
+  handleUnderstood,
   noveltyBoost,
   pat,
   ringPhone,
@@ -131,14 +132,21 @@ export interface SimState {
   invitation: { game: GameKind; untilMs: number } | null;
   /** Recent game results, oldest first. */
   gameResults: Winner[];
+  /**
+   * A line he didn't follow, waiting on a language model's reading. Left out when there's none,
+   * so saves and state hashes from before the feature are unchanged.
+   */
+  thinking?: { id: number; text: string };
 }
 
 export type Command =
   | { type: 'goTo'; node: string }
   /** The player says who they are, and may rename him. */
   | { type: 'introduce'; playerName?: string; tenantName?: string }
-  /** Typed text. */
-  | { type: 'say'; text: string }
+  /** Typed text. With askModel, a line he can't follow goes to the language model. */
+  | { type: 'say'; text: string; askModel?: boolean }
+  /** The language model's answer for `thinking` (see handleUnderstood); null if it had none. */
+  | { type: 'understood'; id: number; answer: unknown }
   | { type: 'deliver'; item: DeliveryItem }
   | { type: 'pat' }
   | { type: 'phone' }
@@ -302,7 +310,10 @@ function applyCommand(state: SimState, world: World, cmd: Command): void {
       if (world.house.nodes.has(cmd.node)) startActivity(state, world, 'potter', cmd.node);
       return;
     case 'say':
-      handleSay(state, world, cmd.text);
+      handleSay(state, world, cmd.text, cmd.askModel);
+      return;
+    case 'understood':
+      handleUnderstood(state, world, cmd.id, cmd.answer);
       return;
     case 'deliver':
       deliver(state, world, cmd.item);

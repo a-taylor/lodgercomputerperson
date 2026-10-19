@@ -101,4 +101,4 @@ Sources: Wikipedia, C64-Wiki, StrategyWiki, ST News review, Retro365, The Oasis 
 - A Food/Water choice when clicking the fridge; the teapot and mug are small targets, and the dog often stands over its bowl.
 - The "Pat" hand icon is the weakest icon.
 
-**Next:** v2, LLM features and deployment. Phases are in PLAN_V2.md section 8; 9a and 9b are done: the repo is public (Penzilla art kept in a private repo, see docs/art.md) and the game is live at https://a-taylor.github.io/lodgercomputerperson/. Phase 10 is next.
+**Next:** v2, LLM features and deployment. Phases are in PLAN_V2.md section 8; 9a and 9b are done: the repo is public (Penzilla art kept in a private repo, see docs/art.md) and the game is live at https://a-taylor.github.io/lodgercomputerperson/. Phase 10 is done: `src/llm/` (template model, remote model, circuit breaker), the async "thinking" path for lines the parser can't read, and an opt-in setting that stays hidden until a Worker URL exists. Phase 11 is built, but without a hosted Worker: this is a learning project, so each player runs `npm run dev` with their own Gemini key (`docs/llm.md`). Next: try it with a real key, then phase 12 (letters).

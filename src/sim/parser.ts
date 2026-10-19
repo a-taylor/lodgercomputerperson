@@ -1,7 +1,7 @@
 // Typed input to an intent. Normalise, fold phrases and synonyms into canonical words, forgive
 // small typos, then match the first intent whose keyword groups are all present.
 import lexiconJson from '../data/lexicon.json';
-import type { GameKind } from './games/types';
+import { GAME_KINDS, type GameKind } from './games/types';
 
 export type IntentId =
   | 'name'
@@ -88,6 +88,51 @@ const VOCAB: string[] = [
   ]),
 ];
 const VOCAB_SET = new Set(VOCAB);
+
+/** One request as a language model reads it: an intent from the fixed list, never free text. */
+export interface IntentItem {
+  intent: IntentId;
+  politeness: Politeness;
+  room?: string;
+  game?: GameKind;
+}
+
+/** Most items a model answer may hold, the same as the queue's length. */
+export const MAX_INTENT_ITEMS = 4;
+/** Intents a model may answer with: not a name (it needs the words), nor the parser's own variants. */
+export const MODEL_INTENTS = ['feedDog', 'wake', 'howAreYou', 'game', 'letter', 'piano', 'dance', 'music', 'tv', 'read', 'exercise', 'eat', 'drink', 'sleep', 'wash', 'goTo', 'yes', 'no', 'greet', 'thanks'] as const satisfies readonly IntentId[];
+export type ModelIntent = (typeof MODEL_INTENTS)[number];
+export const ROOMS: readonly string[] = lexicon.rooms;
+
+/**
+ * Checks a model's answer, `{ items: [...] }`, against the fixed lists. Anything unknown is dropped,
+ * and a room or game that isn't real is ignored. Null if it isn't that shape at all.
+ */
+export function validateIntents(raw: unknown): IntentItem[] | null {
+  if (typeof raw !== 'object' || raw === null || !Array.isArray((raw as { items?: unknown }).items)) return null;
+  const items: IntentItem[] = [];
+  for (const it of (raw as { items: unknown[] }).items) {
+    if (items.length >= MAX_INTENT_ITEMS) break;
+    if (typeof it !== 'object' || it === null) continue;
+    const { intent, politeness, room, game } = it as Record<string, unknown>;
+    if (!(MODEL_INTENTS as readonly unknown[]).includes(intent)) continue;
+    const item: IntentItem = { intent: intent as IntentId, politeness: politeness === 1 || politeness === -1 ? politeness : 0 };
+    if (typeof room === 'string' && lexicon.rooms.includes(room)) item.room = room;
+    if (GAME_KINDS.includes(game as GameKind)) item.game = game as GameKind;
+    if (item.intent === 'goTo' && !item.room) continue;
+    items.push(item);
+  }
+  return items;
+}
+
+/** A model's item as if the parser had read it. */
+export function parsedFromItem(item: IntentItem): Parsed {
+  const def = lexicon.intents.find((i) => i.id === item.intent)!;
+  const parsed: Parsed = { intent: item.intent, activity: def.activity ?? null, politeness: item.politeness, tokens: [] };
+  if (item.room) parsed.room = item.room;
+  if (item.game) parsed.game = item.game;
+  return parsed;
+}
 
 export interface ParseContext {
   /** The dog's name, so "feed Biscuit" means the dog. */

@@ -1,6 +1,6 @@
 # Deploying
 
-The game is a static Vite build on GitHub Pages: <https://a-taylor.github.io/lodgercomputerperson/>. The Worker (phase 11) will be added here.
+The game is a static Vite build on GitHub Pages: <https://a-taylor.github.io/lodgercomputerperson/>. It's an LLM-free demo; the language features run only locally (`docs/llm.md`).
 
 ## Art repo and deploy key (once)
 

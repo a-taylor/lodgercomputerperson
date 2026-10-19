@@ -5,7 +5,7 @@ import type { ActivityDef } from './activities';
 import { GAME_NAMES, type GameKind } from './games';
 import { remember } from './memory';
 import { clampNeed } from './needs';
-import { parse, splitChain, type Parsed, type Politeness } from './parser';
+import { parse, parsedFromItem, splitChain, validateIntents, type Parsed, type Politeness } from './parser';
 import { nextFloat, pick } from './rng';
 import { answerInvite, startGame } from './play';
 import { say } from './speech';
@@ -77,6 +77,8 @@ interface Ask {
   activity: string;
   node?: string;
   game?: GameKind;
+  /** Its own politeness, when a model read each part separately. */
+  politeness?: Politeness;
 }
 const NOVELTY_MS = 8 * HOUR_MS;
 
@@ -128,8 +130,12 @@ export function assessRequest(state: SimState, world: World, activityId: string,
   return { chance: Math.min(1, chance), hard: null, soft };
 }
 
-/** Handles something typed. Returns the outcome for requests, null for chat. */
-export function handleSay(state: SimState, world: World, text: string): Outcome | null {
+/**
+ * Handles something typed. Returns the outcome for requests, null for chat. With `askModel`, a
+ * line he can't follow isn't "confused" yet: he thinks, and the game asks a language model what
+ * it meant. Its answer comes back through handleUnderstood.
+ */
+export function handleSay(state: SimState, world: World, text: string, askModel = false): Outcome | null {
   touch(state);
   const ctx = { dogName: state.dog.identity.name };
   const parsed = parse(text, ctx);
@@ -149,6 +155,35 @@ export function handleSay(state: SimState, world: World, text: string): Outcome 
   if (parsed.politeness < 0) p.mood = clampNeed(p.mood - 3);
   if (parsed.politeness !== 0) remember(state, (log) => (parsed.politeness > 0 ? log.polite++ : log.rude++));
 
+  if (parsed.intent === null && askModel) {
+    state.thinking = { id: state.tick, text };
+    say(state, 'thinking');
+    return null;
+  }
+  return respond(state, world, parsed);
+}
+
+/**
+ * A language model's reading of the line he was thinking about. Checked again here, since it came
+ * from outside. An answer to an older line is ignored; an empty or unusable one leaves him confused.
+ */
+export function handleUnderstood(state: SimState, world: World, id: number, answer: unknown): void {
+  if (state.thinking?.id !== id) return;
+  delete state.thinking;
+  // Dozed off while thinking: the moment has passed.
+  if (isAsleep(state, world)) return;
+  const items = (validateIntents(answer) ?? []).map(parsedFromItem);
+  const asks = items.flatMap((parsed) => {
+    const ask = askOf(world, parsed);
+    return ask ? [{ ...ask, politeness: parsed.politeness }] : [];
+  });
+  if (asks.length > 1) askAll(state, world, asks, asks[0]!.politeness);
+  else if (items.length > 0) respond(state, world, items.find((parsed) => askOf(world, parsed)) ?? items[0]!);
+  else say(state, 'confused');
+}
+
+/** Answers one understood line: chat, or a request. */
+function respond(state: SimState, world: World, parsed: Parsed): Outcome | null {
   switch (parsed.intent) {
     case null:
       say(state, 'confused');
@@ -209,7 +244,11 @@ function handleChain(state: SimState, world: World, politeness: Politeness, asks
   }
   if (politeness < 0) p.mood = clampNeed(p.mood - 3);
   if (politeness !== 0) remember(state, (log) => (politeness > 0 ? log.polite++ : log.rude++));
-  // The first is answered now if nothing is waiting; the rest wait their turn.
+  return askAll(state, world, asks, politeness);
+}
+
+/** The first is answered now if nothing is waiting; the rest wait their turn. */
+function askAll(state: SimState, world: World, asks: Ask[], politeness: Politeness): Outcome {
   const outcome = requestOrQueue(state, world, asks[0]!, politeness);
   const rest = asks.slice(1);
   if (enqueue(state, rest, politeness) < rest.length) say(state, 'queue.full');
@@ -225,7 +264,7 @@ function enqueue(state: SimState, asks: Ask[], politeness: Politeness, agreed = 
       activity: ask.activity,
       node: ask.node ?? null,
       game: ask.game ?? null,
-      politeness,
+      politeness: ask.politeness ?? politeness,
       untilMs: state.clock.ms + DEFER_MS * (state.queue.length + 1),
       agreed,
     });

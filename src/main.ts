@@ -11,6 +11,7 @@ import { makeMemorial, type MemorialEntry } from './sim/memorial';
 import { createSim, currentStep, DAY_MS, HOUR_MS, isAsleep, step, TICK_MS, timeScaleOf, type Command, type SimState } from './sim/sim';
 import { defaultWorld } from './sim/world';
 import { readSave, writeSave } from './storage/idb';
+import { remoteModel, templateModel, withBreaker, type LanguageModel } from './llm/model';
 import { makeSave, parseSave, SaveError, type SaveFile } from './storage/save';
 import '@fontsource/pixelify-sans/400.css';
 import '@fontsource/pixelify-sans/600.css';
@@ -218,6 +219,40 @@ const captionsInput = $<HTMLInputElement>('#captions-input');
 // Reduced motion follows the OS until the player chooses; the choice is remembered.
 const MOTION_KEY = 'lcp-motion';
 const reduceMotionInput = $<HTMLInputElement>('#reduce-motion-input');
+
+// Understanding messy requests with a language model: opt-in, and only offered when the build
+// knows where the Worker is (VITE_LCP_API_URL). Off, he's "confused" exactly as before.
+const API_URL = import.meta.env.VITE_LCP_API_URL as string | undefined;
+const MODEL_KEY = 'lcp-model';
+const modelInput = $<HTMLInputElement>('#model-input');
+let modelOn = false;
+try {
+  modelOn = !!API_URL && localStorage.getItem(MODEL_KEY) === 'on';
+} catch {
+  // Storage blocked: stays off.
+}
+const remote = API_URL ? withBreaker(remoteModel({ url: API_URL })) : null;
+const model = (): LanguageModel => (modelOn && remote ? remote : templateModel);
+$<HTMLElement>('#model-setting').hidden = !API_URL;
+modelInput.checked = modelOn;
+modelInput.addEventListener('change', () => {
+  modelOn = modelInput.checked;
+  try {
+    localStorage.setItem(MODEL_KEY, modelOn ? 'on' : 'off');
+  } catch {
+    // Not remembered; fine.
+  }
+});
+/** The `thinking` line already sent to the model, so each is asked about once. */
+let askedThinking: number | null = null;
+function askModelIfThinking(): void {
+  const thinking = sim.thinking;
+  if (!thinking || thinking.id === askedThinking) return;
+  askedThinking = thinking.id;
+  void model()
+    .intents(thinking.text, { dogName: sim.dog.identity.name })
+    .then((items) => pending.push({ type: 'understood', id: thinking.id, answer: items && { items } }));
+}
 let reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 try {
   const saved = localStorage.getItem(MOTION_KEY);
@@ -453,7 +488,7 @@ talk.addEventListener('submit', (e) => {
   e.preventDefault();
   const text = talkInput.value.trim();
   if (!text) return;
-  send({ type: 'say', text });
+  send({ type: 'say', text, askModel: modelOn });
   talkInput.value = '';
 });
 
@@ -820,6 +855,7 @@ function frame(now: number): void {
     step(sim, world, pending.splice(0));
     acc -= TICK_MS;
   }
+  askModelIfThinking();
   const alpha = acc / TICK_MS;
   const lerp = (a: number, b: number) => a + (b - a) * alpha;
   const { person: p, dog } = sim;

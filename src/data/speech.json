@@ -347,6 +347,12 @@
     "{player}! What a lovely name.",
     "Hello, {player}. I'm {name}."
   ],
+  "thinking": [
+    "Hmm, let me think...",
+    "Er... hang on.",
+    "Hmm...",
+    "Let me see..."
+  ],
   "confused": [
     "Hmm?",
     "Sorry, I didn't catch that.",
