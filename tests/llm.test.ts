@@ -85,6 +85,7 @@ describe('the circuit breaker', () => {
         if (r) throw r;
         return [{ intent: 'dance' as const, politeness: 0 as const }];
       },
+      letter: async () => null,
     };
     return m;
   }
@@ -114,8 +115,10 @@ describe('the circuit breaker', () => {
   });
 
   it('never rejects, whatever the remote throws', async () => {
-    const model = withBreaker({ intents: () => Promise.reject(new TypeError('boom')) });
+    const boom = () => Promise.reject(new TypeError('boom'));
+    const model = withBreaker({ intents: boom, letter: boom });
     await expect(model.intents('a', ctx)).resolves.toBeNull();
+    await expect(model.letter({} as never)).resolves.toBeNull();
   });
 });
 

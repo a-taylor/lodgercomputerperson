@@ -1,8 +1,11 @@
-// Asks Gemini what a line the parser couldn't read was asking for. This runs in the Worker
-// (worker/index.ts), never in the browser, so the player's key stays out of the page. It
-// owns the prompt; the browser only sends the typed line and the dog's name.
+// Asks Gemini what a line the parser couldn't read was asking for, and writes his letters. This
+// runs in the Worker (worker/index.ts), never in the browser, so the player's key stays out of the
+// page. It owns the prompts; the browser only sends the typed line and the dog's name, or a
+// letter's facts (src/llm/letter.ts).
 import { GAME_KINDS, GAME_NAMES } from '../sim/games/types';
+import { MODEL_LETTER_CHARS, type LetterRequest } from '../sim/letters';
 import { MAX_INTENT_ITEMS, MODEL_INTENTS, ROOMS, validateIntents, type IntentItem, type ModelIntent } from '../sim/parser';
+import { letterSystemPrompt, letterUserPrompt, validateLetterRequest } from './letter';
 
 export const DEFAULT_MODEL = 'gemini-3.5-flash-lite';
 /** Longest line and dog name accepted. */
@@ -85,11 +88,17 @@ export interface GeminiOptions {
   timeoutMs?: number;
 }
 
+interface GeminiCall {
+  system: string;
+  user: string;
+  generationConfig: Record<string, unknown>;
+}
+
 /**
- * The requests in a typed line, checked against our lists: an empty list when Gemini found none
- * (or answered with junk). Throws GeminiError when the call itself fails.
+ * One call to Gemini: the model's text and why it stopped. Throws GeminiError when the call itself
+ * fails (network, timeout, a bad status), so callers can tell that from a poor answer.
  */
-export async function askGemini(text: string, dogName: string, opts: GeminiOptions): Promise<IntentItem[]> {
+async function callGemini({ system, user, generationConfig }: GeminiCall, opts: GeminiOptions): Promise<{ text: string; finish: string }> {
   const { apiKey, model = DEFAULT_MODEL, fetch: doFetch = (...a) => fetch(...a), timeoutMs = 8000 } = opts;
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
   let res: Response;
@@ -98,9 +107,9 @@ export async function askGemini(text: string, dogName: string, opts: GeminiOptio
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
       body: JSON.stringify({
-        systemInstruction: { parts: [{ text: systemPrompt(dogName.slice(0, MAX_DOG_NAME)) }] },
-        contents: [{ role: 'user', parts: [{ text: text.slice(0, MAX_TEXT) }] }],
-        generationConfig: { responseMimeType: 'application/json', responseSchema: RESPONSE_SCHEMA, temperature: 0 },
+        systemInstruction: { parts: [{ text: system }] },
+        contents: [{ role: 'user', parts: [{ text: user }] }],
+        generationConfig,
       }),
       signal: AbortSignal.timeout(timeoutMs),
     });
@@ -109,10 +118,31 @@ export async function askGemini(text: string, dogName: string, opts: GeminiOptio
   }
   if (!res.ok) throw new GeminiError(`Gemini answered ${res.status}: ${await errorMessage(res)}`, res.status);
   try {
-    const body = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
-    const answer = JSON.parse(body.candidates?.[0]?.content?.parts?.[0]?.text ?? '') as { items?: unknown };
-    const items = Array.isArray(answer.items)
-      ? answer.items.map((it) => {
+    const body = (await res.json()) as { candidates?: { finishReason?: string; content?: { parts?: { text?: string }[] } }[] };
+    const candidate = body.candidates?.[0];
+    return { text: candidate?.content?.parts?.map((p) => p.text ?? '').join('') ?? '', finish: candidate?.finishReason ?? '' };
+  } catch {
+    return { text: '', finish: '' };
+  }
+}
+
+/**
+ * The requests in a typed line, checked against our lists: an empty list when Gemini found none
+ * (or answered with junk). Throws GeminiError when the call itself fails.
+ */
+export async function askGemini(text: string, dogName: string, opts: GeminiOptions): Promise<IntentItem[]> {
+  const { text: answer } = await callGemini(
+    {
+      system: systemPrompt(dogName.slice(0, MAX_DOG_NAME)),
+      user: text.slice(0, MAX_TEXT),
+      generationConfig: { responseMimeType: 'application/json', responseSchema: RESPONSE_SCHEMA, temperature: 0 },
+    },
+    opts,
+  );
+  try {
+    const parsed = JSON.parse(answer) as { items?: unknown };
+    const items = Array.isArray(parsed.items)
+      ? parsed.items.map((it) => {
           const item = it as Record<string, unknown>;
           return { ...item, politeness: POLITENESS[item.politeness as keyof typeof POLITENESS] ?? 0 };
         })
@@ -121,6 +151,28 @@ export async function askGemini(text: string, dogName: string, opts: GeminiOptio
   } catch {
     return [];
   }
+}
+
+/** Letters take longer to write than a list of intents. */
+export const LETTER_TIMEOUT_MS = 12_000;
+
+/**
+ * A letter in his voice from checked facts, or null when Gemini's answer is unusable (cut off,
+ * blocked, too short or too long), so the game keeps its template. Throws GeminiError when the
+ * call itself fails.
+ */
+export async function askGeminiLetter(req: LetterRequest, opts: GeminiOptions): Promise<string | null> {
+  const { text, finish } = await callGemini(
+    {
+      system: letterSystemPrompt(req),
+      user: letterUserPrompt(req),
+      generationConfig: { temperature: 0.9, maxOutputTokens: 600 },
+    },
+    { timeoutMs: LETTER_TIMEOUT_MS, ...opts },
+  );
+  const letter = text.trim();
+  if (finish !== 'STOP' || letter.length < MODEL_LETTER_CHARS.min || letter.length > MODEL_LETTER_CHARS.max) return null;
+  return letter;
 }
 
 /** Google's one-line reason ("API key not valid..."), or the start of the body. */
@@ -151,8 +203,29 @@ export async function handleIntentRequest(raw: string, opts: GeminiOptions): Pro
   try {
     return { status: 200, body: { items: await askGemini(req.text, dogName, opts) } };
   } catch (e) {
-    const status = e instanceof GeminiError ? e.status : 502;
-    // 429 means slow down, so the game's breaker waits longer; anything else is just a failure.
-    return { status: status === 429 ? 429 : 502, body: { error: e instanceof Error ? e.message : 'failed' } };
+    return failure(e);
   }
+}
+
+/** The Worker's /api/letter: checks the facts, asks Gemini, and answers `{ text }` (null: keep the template). */
+export async function handleLetterRequest(raw: string, opts: GeminiOptions): Promise<ApiReply> {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return { status: 400, body: { error: 'bad json' } };
+  }
+  const req = validateLetterRequest(parsed);
+  if (!req) return { status: 400, body: { error: 'bad letter facts' } };
+  try {
+    return { status: 200, body: { text: await askGeminiLetter(req, opts) } };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
+/** 429 means slow down, so the game's breaker waits longer; anything else is just a failure. */
+function failure(e: unknown): ApiReply {
+  const status = e instanceof GeminiError ? e.status : 502;
+  return { status: status === 429 ? 429 : 502, body: { error: e instanceof Error ? e.message : 'failed' } };
 }

@@ -225,23 +225,14 @@ const reduceMotionInput = $<HTMLInputElement>('#reduce-motion-input');
 const API_URL = import.meta.env.VITE_LCP_API_URL as string | undefined;
 const MODEL_KEY = 'lcp-model';
 const modelInput = $<HTMLInputElement>('#model-input');
-let modelOn = false;
-try {
-  modelOn = !!API_URL && localStorage.getItem(MODEL_KEY) === 'on';
-} catch {
-  // Storage blocked: stays off.
-}
+let modelOn = !!API_URL && recall(MODEL_KEY) === 'on';
 const remote = API_URL ? withBreaker(remoteModel({ url: API_URL })) : null;
 const model = (): LanguageModel => (modelOn && remote ? remote : templateModel);
 $<HTMLElement>('#model-setting').hidden = !API_URL;
 modelInput.checked = modelOn;
 modelInput.addEventListener('change', () => {
   modelOn = modelInput.checked;
-  try {
-    localStorage.setItem(MODEL_KEY, modelOn ? 'on' : 'off');
-  } catch {
-    // Not remembered; fine.
-  }
+  remember(MODEL_KEY, modelOn ? 'on' : 'off');
 });
 /** The `thinking` line already sent to the model, so each is asked about once. */
 let askedThinking: number | null = null;
@@ -252,6 +243,45 @@ function askModelIfThinking(): void {
   void model()
     .intents(thinking.text, { dogName: sim.dog.identity.name })
     .then((items) => pending.push({ type: 'understood', id: thinking.id, answer: items && { items } }));
+}
+
+// Letters in his own words: also opt-in. While this is on, the sim asks (letterAsk) when he sits
+// down to write, so the words are usually ready before he's done; the template stands otherwise.
+const LETTERS_KEY = 'lcp-model-letters';
+const lettersInput = $<HTMLInputElement>('#model-letters-input');
+let lettersOn = !!API_URL && recall(LETTERS_KEY) === 'on';
+lettersInput.checked = lettersOn;
+if (!!sim.modelLetters !== lettersOn) pending.push({ type: 'modelLetters', on: lettersOn });
+lettersInput.addEventListener('change', () => {
+  lettersOn = lettersInput.checked;
+  remember(LETTERS_KEY, lettersOn ? 'on' : 'off');
+  pending.push({ type: 'modelLetters', on: lettersOn });
+});
+/** The letter already sent to the model, so each is asked about once. */
+let askedLetter: number | null = null;
+function askModelForLetter(): void {
+  const ask = sim.letterAsk;
+  // Asked once each; one already answered (kept for the letter he's typing) needs nothing more.
+  if (!ask || ask.id === askedLetter || ask.text !== undefined) return;
+  askedLetter = ask.id;
+  const { id, facts, who } = ask;
+  const letters = lettersOn && remote ? remote : templateModel;
+  void letters.letter({ facts, who }).then((text) => pending.push({ type: 'letterText', id, text }));
+}
+
+function recall(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null; // Storage blocked: the default.
+  }
+}
+function remember(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Not remembered; fine.
+  }
 }
 let reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 try {
@@ -761,8 +791,66 @@ function welcomeBack(summary: AwaySummary): void {
   prev.y = sim.person.y;
   prev.dx = sim.dog.x;
   prev.dy = sim.dog.y;
-  if (summary.letter) openLetters(summary.letter.id);
+  if (summary.letter) {
+    // A letter the model is still rewording: say so, and open it when the words land (or don't).
+    if (sim.letterAsk?.letter === summary.letter.id) waitForLetter(summary.letter.id);
+    else openLetters(summary.letter.id);
+  }
   void save();
+}
+
+/** The away letter waiting on the model, shown as "finishing" until its words arrive. */
+let awayLetterId: number | null = null;
+function waitForLetter(id: number): void {
+  awayLetterId = id;
+  letterHeading.textContent = `${sim.person.identity.name} is just finishing a letter…`;
+  letterText.textContent = '';
+  $<HTMLButtonElement>('#letter-prev').disabled = true;
+  $<HTMLButtonElement>('#letter-next').disabled = true;
+  if (!letterDialog.open) letterDialog.showModal();
+}
+function showAwayLetterWhenReady(): void {
+  if (awayLetterId === null || sim.letterAsk?.letter === awayLetterId) return;
+  const id = awayLetterId;
+  awayLetterId = null;
+  if (letterDialog.open) openLetters(id);
+}
+letterDialog.addEventListener('close', () => (awayLetterId = null));
+
+// "He's written to you": a browser notification, if you asked for one, while the game is running
+// in a window you're not looking at. It waits for the model's words, so the letter is final.
+const NOTIFY_KEY = 'lcp-notify';
+const notifyInput = $<HTMLInputElement>('#notify-input');
+const notifyNote = $<HTMLElement>('#notify-note');
+const canNotify = 'Notification' in window;
+$<HTMLElement>('#notify-setting').hidden = !canNotify;
+let notifyOn = canNotify && recall(NOTIFY_KEY) === 'on' && Notification.permission === 'granted';
+notifyInput.checked = notifyOn;
+notifyInput.addEventListener('change', async () => {
+  notifyOn = notifyInput.checked;
+  notifyNote.textContent = '';
+  if (notifyOn && Notification.permission !== 'granted') {
+    const answer = await Notification.requestPermission();
+    if (answer !== 'granted') {
+      notifyOn = notifyInput.checked = false;
+      notifyNote.textContent = 'Your browser said no. You can allow notifications for this page in its site settings.';
+    }
+  }
+  remember(NOTIFY_KEY, notifyOn ? 'on' : 'off');
+});
+/** Newest letter already told about (or there when the game started). */
+let notifiedLetter = sim.letters[sim.letters.length - 1]?.id ?? 0;
+function notifyNewLetter(): void {
+  const newest = sim.letters[sim.letters.length - 1];
+  if (!newest || newest.id <= notifiedLetter || sim.letterAsk?.letter === newest.id) return;
+  notifiedLetter = newest.id;
+  if (!notifyOn || newest.read || (document.hasFocus() && !document.hidden)) return;
+  const note = new Notification(`${sim.person.identity.name} has written you a letter`, { body: 'Open the game to read it.', tag: 'lcp-letter' });
+  note.addEventListener('click', () => {
+    window.focus();
+    openLetters(newest.id);
+    note.close();
+  });
 }
 
 function daysPhrase(days: number): string {
@@ -856,6 +944,9 @@ function frame(now: number): void {
     acc -= TICK_MS;
   }
   askModelIfThinking();
+  askModelForLetter();
+  showAwayLetterWhenReady();
+  notifyNewLetter();
   const alpha = acc / TICK_MS;
   const lerp = (a: number, b: number) => a + (b - a) * alpha;
   const { person: p, dog } = sim;

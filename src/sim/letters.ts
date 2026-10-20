@@ -3,6 +3,7 @@
 // you're doing as a caretaker. Sentences and whole letters are both guarded against repeats.
 import lettersJson from '../data/letters.json';
 import { favouriteGame, GAME_NAMES, type GameKind } from './games';
+import type { Quirk, Traits } from './identity';
 import { since, type DayLog } from './memory';
 import { NEED_IDS } from './needs';
 import { nextFloat, pick, shuffle } from './rng';
@@ -18,6 +19,8 @@ export interface Letter {
   ms: number;
   text: string;
   read: boolean;
+  /** Set when a language model wrote the words (from the same facts); left out for template letters. */
+  by?: 'model';
 }
 
 /** No letter may repeat one of the last this-many. */
@@ -140,6 +143,38 @@ export function gatherFacts(state: SimState, away?: AwayNote): LetterFacts {
   };
 }
 
+/** Who is writing to whom, for a language model to write the letter in his voice. */
+export interface LetterWho {
+  player: string;
+  name: string;
+  dog: string;
+  food: string;
+  music: string;
+  quirks: Quirk[];
+  traits: Traits;
+}
+
+/** What a language model needs to write a letter: the facts and who's involved. Nothing else from the save. */
+export interface LetterRequest {
+  facts: LetterFacts;
+  who: LetterWho;
+}
+
+function letterWho(state: SimState): LetterWho {
+  const p = state.person.identity;
+  const round = (n: number) => Math.round(n * 10) / 10;
+  const t = p.traits;
+  return {
+    player: state.playerName ?? 'friend',
+    name: p.name,
+    dog: state.dog.identity.name,
+    food: p.favouriteFood,
+    music: p.favouriteMusic,
+    quirks: [...p.quirks],
+    traits: { musical: round(t.musical), bookish: round(t.bookish), telly: round(t.telly), tidy: round(t.tidy), sociable: round(t.sociable) },
+  };
+}
+
 function gamesLine(log: DayLog): LetterFacts['games'] {
   const finished = log.games.filter((g) => g.winner !== null);
   if (finished.length === 0) return null;
@@ -152,9 +187,19 @@ function gamesLine(log: DayLog): LetterFacts['games'] {
   return { line: 'games.mixed', slots };
 }
 
+/**
+ * When he sits down to write (with model letters on): ask for the words now, so they're ready by
+ * the time he's typed it. The facts are taken here and the letter keeps them.
+ */
+export function askForLetter(state: SimState): void {
+  if (state.modelLetters) state.letterAsk = { id: state.clock.ms, facts: gatherFacts(state), who: letterWho(state) };
+}
+
 /** Writes a letter from the current state, files it, and returns it. */
 export function writeLetter(state: SimState, away?: AwayNote): Letter {
-  const facts = gatherFacts(state, away);
+  // Asked for when he sat down, and not yet used for a letter.
+  const early = !away && state.letterAsk?.letter === undefined ? state.letterAsk : undefined;
+  const facts = early?.facts ?? gatherFacts(state, away);
   const recentTexts = new Set(state.letters.slice(-UNIQUE_WITHIN).map((l) => l.text));
   let text = '';
   let used: string[] = [];
@@ -169,7 +214,43 @@ export function writeLetter(state: SimState, away?: AwayNote): Letter {
   state.letters.push(letter);
   while (state.letters.length > KEEP_LETTERS) state.letters.shift();
   state.lastLetterMs = state.clock.ms;
+  if (early) {
+    if (typeof early.text === 'string') {
+      letter.text = early.text;
+      letter.by = 'model';
+    }
+    // Answered (words or none): done. Still waiting: late words may yet replace it while unread.
+    if (early.text !== undefined) delete state.letterAsk;
+    else early.letter = letter.id;
+  } else if (state.modelLetters) {
+    // An away letter, written in one go: the template stands until the words come.
+    state.letterAsk = { id: state.clock.ms, letter: letter.id, facts, who: letterWho(state) };
+  }
   return letter;
+}
+
+/** Shortest and longest letter a model may write; anything else keeps the template. */
+export const MODEL_LETTER_CHARS = { min: 40, max: 1500 };
+
+/**
+ * A language model's words for `letterAsk`. Before the letter is written they're kept for it;
+ * after, they replace the template only while it's unread, so a letter never changes once you've
+ * seen it. Words that don't fit count as none, and the template stands.
+ */
+export function acceptLetterText(state: SimState, id: number, text: unknown): void {
+  const ask = state.letterAsk;
+  if (ask?.id !== id) return;
+  const clean = typeof text === 'string' ? text.trim() : '';
+  const words = clean.length >= MODEL_LETTER_CHARS.min && clean.length <= MODEL_LETTER_CHARS.max ? clean : null;
+  if (ask.letter === undefined) {
+    ask.text = words;
+    return;
+  }
+  delete state.letterAsk;
+  const letter = state.letters.find((l) => l.id === ask.letter);
+  if (!letter || letter.read || words === null) return;
+  letter.text = words;
+  letter.by = 'model';
 }
 
 function compose(state: SimState, facts: LetterFacts, used: string[], ignoreRecent: boolean): string {

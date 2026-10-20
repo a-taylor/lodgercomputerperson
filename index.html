@@ -114,12 +114,20 @@
         <h3>Options</h3>
         <p><label><input type="checkbox" id="reduce-motion-input" /> Reduce motion (no screen shake, flicker or fades)</label></p>
         <p><label><input type="checkbox" id="captions-input" /> Caption every sound (piano, TV, typing…), not just knocks and the phone</label></p>
+        <div id="notify-setting" hidden>
+          <p><label><input type="checkbox" id="notify-input" /> Tell me when he writes a letter (a browser notification, while you're in another window)</label></p>
+          <p class="small" id="notify-note" role="status"></p>
+        </div>
         <div id="model-setting" hidden>
           <p><label><input type="checkbox" id="model-input" /> Understand messy requests (online)</label></p>
+          <p><label><input type="checkbox" id="model-letters-input" /> Let him write his letters in his own words (online)</label></p>
           <p class="small">
-            When he can't follow something you type, the game sends that line and your dog's name, using your own key, to
-            Google's Gemini API to ask what you meant. Nothing else from your save is sent. On Gemini's free tier, Google may
-            keep what it receives and use it to improve its products. He still decides for himself whether to do what you asked.
+            Both use your own key with Google's Gemini API. For a request he can't follow, the game sends that line and your
+            dog's name, and he still decides for himself whether to do it. For a letter, it sends your name, his and the dog's,
+            his favourite food and music, his character, and a summary of his days since the last letter: his mood, what he
+            did, what you sent, what he'd like and how you've treated him. If the words don't come, he sends his usual letter.
+            Nothing else from your save is sent. On Gemini's free tier, Google may keep what it receives and use it to
+            improve its products.
           </p>
         </div>
         <h3>Saving</h3>

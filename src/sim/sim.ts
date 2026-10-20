@@ -17,7 +17,7 @@ import {
   type KnockReason,
   type QueuedRequest,
 } from './interactions';
-import type { Letter } from './letters';
+import { acceptLetterText, askForLetter, type Letter, type LetterRequest } from './letters';
 import { remember, type DayLog } from './memory';
 import { createMoveIn, DEFAULT_EMPTY_TICKS, FRONT_DOOR, movedIn, stepMoveIn, type MoveInState } from './moveIn';
 import { placeAt, routeFromHere, walk, type Mover } from './movement';
@@ -137,6 +137,14 @@ export interface SimState {
    * so saves and state hashes from before the feature are unchanged.
    */
   thinking?: { id: number; text: string };
+  /** The player has asked for model-written letters. Left out when off, like `thinking`. */
+  modelLetters?: true;
+  /**
+   * Words asked of a language model for a letter (see askForLetter, acceptLetterText). `id` is
+   * when it was asked; `letter` is set once the letter is written; `text` is the answer that came
+   * before then (null for none).
+   */
+  letterAsk?: { id: number; letter?: number; text?: string | null } & LetterRequest;
 }
 
 export type Command =
@@ -158,6 +166,10 @@ export type Command =
   /** Your answer when he asks you to play. */
   | { type: 'answerInvite'; accept: boolean }
   | { type: 'readLetter'; id: number }
+  /** Whether letters should be offered to the language model. A setting, not company. */
+  | { type: 'modelLetters'; on: boolean }
+  /** The language model's words for `letterAsk` (by its id); null if it had none. Not company either. */
+  | { type: 'letterText'; id: number; text: unknown }
   /** Game seconds per real second. Not an interaction with him, and works even while he moves in. */
   | { type: 'setSpeed'; timeScale: number };
 
@@ -302,6 +314,16 @@ export function run(state: SimState, world: World, ticks: number): void {
 
 function applyCommand(state: SimState, world: World, cmd: Command): void {
   if (cmd.type === 'setSpeed') return; // handled in step(), and not a sign of company
+  if (cmd.type === 'modelLetters') {
+    if (cmd.on) {
+      state.modelLetters = true;
+    } else {
+      delete state.modelLetters;
+      delete state.letterAsk;
+    }
+    return;
+  }
+  if (cmd.type === 'letterText') return acceptLetterText(state, cmd.id, cmd.text);
   if (!state.person.alive && cmd.type !== 'introduce') return;
   // Anything you do counts as company.
   state.lastInteractionMs = state.clock.ms;
@@ -431,6 +453,7 @@ export function startActivity(state: SimState, world: World, id: string, forcedN
   }
   p.activity = { id, step: 0, node: '', doing: false, remainingMs: 0, startedMs: state.clock.ms };
   if (id === 'knock') p.activity.reason = wantsAttention(state)?.reason ?? 'lonely';
+  if (id === 'letter') askForLetter(state);
   beginWalkToStep(state, world, forcedNode);
 }
 

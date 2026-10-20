@@ -22,6 +22,17 @@ describe('the /api/intent Worker', () => {
     expect((gemini.mock.calls[0] as unknown as [string, RequestInit])[1].headers).toMatchObject({ 'x-goog-api-key': 'test-key' });
   });
 
+  it('routes /api/letter through the same checks, with room for a letter', async () => {
+    const words = 'Dear Sam,\n\nThe piano and I have been getting on famously this week.\n\nPip';
+    vi.stubGlobal('fetch', vi.fn(async () => Response.json({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: words }] } }] })));
+    const facts = { mood: 'good', review: 'good', did: [['piano', 2]] };
+    const ok = await worker.fetch(post(JSON.stringify({ facts, who: { name: 'Pip', player: 'Sam' } }), { path: '/api/letter' }), env);
+    expect(ok.status).toBe(200);
+    expect(await ok.json()).toEqual({ text: words });
+    expect((await worker.fetch(post('{}', { path: '/api/letter', origin: 'https://elsewhere.example' }), env)).status).toBe(403);
+    expect((await worker.fetch(post('a'.repeat(4001), { path: '/api/letter' }), env)).status).toBe(413);
+  });
+
   it('answers the preflight for localhost pages on any port', async () => {
     for (const origin of ['http://localhost:5173', 'http://127.0.0.1:4173', 'http://localhost']) {
       const res = await worker.fetch(new Request('http://worker/api/intent', { method: 'OPTIONS', headers: { origin } }), env);
