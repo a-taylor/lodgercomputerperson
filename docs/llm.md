@@ -51,8 +51,10 @@ plan is enough). The game still only calls it from `npm run dev`; the Pages buil
 The address is public, so the Worker only answers pages served from `localhost` or `127.0.0.1`
 (any port): it checks the request's `Origin` and turns anything else away (403) before doing
 anything else. Browsers can't fake `Origin`, so no other website can use your Worker; a script
-outside a browser can, which is what the limit of 10 requests a minute is for (429, after which
-the game waits 15 minutes). Live logs: `npx wrangler tail`, or Workers & Pages → the Worker →
+outside a browser can. A rate limit of about 10 requests a minute slows that down (429, after which
+the game waits 15 minutes), but Cloudflare's limiter is deliberately approximate: it counts per
+data centre and catches up in the background, so a burst can get well past 10 before it trips.
+What finally caps the damage is your Gemini key's own free-tier quota. Live logs: `npx wrangler tail`, or Workers & Pages → the Worker →
 Observability in the dashboard. To take it down: `npx wrangler delete`.
 
 ## What gets sent
