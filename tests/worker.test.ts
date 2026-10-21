@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { DatabaseSync } from 'node:sqlite';
+import { DailyCounter } from '../worker/counter';
 import worker, { type Env } from '../worker/index';
 
 const allow = { limit: async () => ({ success: true }) };
@@ -69,5 +71,46 @@ describe('the /api/intent Worker', () => {
     expect(res.status).toBe(429);
     expect(res.headers.get('access-control-allow-origin')).toBe(LOCAL);
     expect(gemini).not.toHaveBeenCalled();
+  });
+
+  it('answers 429 once the day\'s cap is reached, counting only requests that would reach Gemini', async () => {
+    const gemini = vi.fn(async () => Response.json({ candidates: [{ content: { parts: [{ text: '{"items":[]}' }] } }] }));
+    vi.stubGlobal('fetch', gemini);
+    const calls: [string, string, number][] = [];
+    let left = 2;
+    const DAILY = { getByName: (name: string) => ({ take: async (day: string, limit: number) => (calls.push([name, day, limit]), left-- > 0) }) };
+    const capped = { ...env, DAILY, DAILY_LIMIT: 2 };
+    await worker.fetch(post('{"text":"hi"}', { origin: 'https://elsewhere.example' }), capped);
+    await worker.fetch(post('a'.repeat(3000)), capped);
+    expect(calls).toEqual([]);
+    expect((await worker.fetch(post('{"text":"hi"}'), capped)).status).toBe(200);
+    expect((await worker.fetch(post('{"text":"hi"}'), capped)).status).toBe(200);
+    const res = await worker.fetch(post('{"text":"hi"}'), capped);
+    expect(res.status).toBe(429);
+    expect(await res.json()).toEqual({ error: 'daily limit reached' });
+    expect(gemini).toHaveBeenCalledTimes(2);
+    expect(calls[0]).toEqual(['global', new Date().toISOString().slice(0, 10), 2]);
+  });
+});
+
+/** The Durable Object's storage, played by Node's own SQLite. */
+function counter(): DailyCounter {
+  const db = new DatabaseSync(':memory:');
+  const sql = {
+    exec: (query: string, ...bindings: unknown[]) => {
+      const rows = db.prepare(query).all(...(bindings as string[]));
+      return { toArray: () => rows };
+    },
+  };
+  return new DailyCounter({ storage: { sql } }, {});
+}
+
+describe('the daily counter', () => {
+  it('counts each day separately and stops at the limit', async () => {
+    const daily = counter();
+    const takes = [];
+    for (let i = 0; i < 4; i++) takes.push(await daily.take('2026-10-21', 3));
+    expect(takes).toEqual([true, true, true, false]);
+    expect(await daily.take('2026-10-22', 3)).toBe(true);
   });
 });

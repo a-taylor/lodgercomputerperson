@@ -1,16 +1,26 @@
 // The Cloudflare Worker that answers /api/intent and /api/letter. It holds the Gemini key and runs
 // the same code the tests cover in src/llm/gemini.ts. The game calls it straight from the
 // browser, so it only answers pages served from localhost (CORS), and a rate limit covers anything
-// that fakes its Origin outside a browser. Secrets come from .env.local under `wrangler dev`, and
-// from `wrangler secret` once deployed.
+// that fakes its Origin outside a browser, with a hard daily cap behind it (worker/counter.ts).
+// Secrets come from .env.local under `wrangler dev`, and from `wrangler secret` once deployed.
 import { handleIntentRequest, handleLetterRequest, type ApiReply, type GeminiOptions } from '../src/llm/gemini';
+import type { DailyCounter } from './counter';
+
+// Wrangler finds the Durable Object class by this export (wrangler.jsonc, durable_objects).
+export { DailyCounter } from './counter';
 
 export interface Env {
   GEMINI_API_KEY?: string;
   GEMINI_MODEL?: string;
   /** Cloudflare's rate limiting binding (wrangler.jsonc). */
   LIMITER?: { limit(opts: { key: string }): Promise<{ success: boolean }> };
+  /** The daily counter, a Durable Object (worker/counter.ts), and how many requests a day it allows. */
+  DAILY?: { getByName(name: string): Pick<DailyCounter, 'take'> };
+  DAILY_LIMIT?: number | string;
 }
+
+/** Used when DAILY_LIMIT isn't set (wrangler.jsonc sets it). */
+const DEFAULT_DAILY_LIMIT = 300;
 
 /** Each endpoint and the longest body it accepts; a real one is well under this. */
 const ROUTES: Record<string, { handle: (raw: string, opts: GeminiOptions) => Promise<ApiReply>; maxBody: number }> = {
@@ -46,9 +56,18 @@ export default {
     if (env.LIMITER && !(await env.LIMITER.limit({ key: 'api' })).success) return json(429, { error: 'slow down' }, cors);
     const raw = await req.text();
     if (raw.length > route.maxBody) return json(413, { error: 'too long' }, cors);
+    // The hard cap: one count per request that gets this far, kept by the Durable Object.
+    if (env.DAILY && !(await underDailyLimit(env.DAILY, env.DAILY_LIMIT))) return json(429, { error: 'daily limit reached' }, cors);
     const reply = await route.handle(raw, { apiKey: env.GEMINI_API_KEY, model: env.GEMINI_MODEL || undefined });
     // Shows in `wrangler dev`'s terminal (and `wrangler tail` once deployed).
     if (reply.status !== 200) console.warn(`[${new URL(req.url).pathname}] ${JSON.stringify(reply.body)}`);
     return json(reply.status, reply.body, cors);
   },
 };
+
+async function underDailyLimit(daily: NonNullable<Env['DAILY']>, limit: Env['DAILY_LIMIT']): Promise<boolean> {
+  const max = Number(limit ?? DEFAULT_DAILY_LIMIT);
+  const today = new Date().toISOString().slice(0, 10);
+  // One counter for everything, so every request goes to the same instance.
+  return daily.getByName('global').take(today, Number.isFinite(max) ? max : DEFAULT_DAILY_LIMIT);
+}
