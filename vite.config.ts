@@ -26,6 +26,8 @@ export default defineConfig({
   build: { target: 'es2022' },
   test: {
     include: ['tests/**/*.test.ts'],
+    // Only the Workers runtime has this module; the Worker's Durable Object extends its class.
+    alias: { 'cloudflare:workers': new URL('./tests/stubs/cloudflare-workers.ts', import.meta.url).pathname },
     // Week-long sim runs take a few seconds locally and longer on CI runners.
     testTimeout: 30_000,
   },

@@ -65,8 +65,21 @@ anything else. Browsers can't fake `Origin`, so no other website can use your Wo
 outside a browser can. A rate limit of about 10 requests a minute slows that down (429, after which
 the game waits 15 minutes), but Cloudflare's limiter is deliberately approximate: it counts per
 data centre and catches up in the background, so a burst can get well past 10 before it trips.
-What finally caps the damage is your Gemini key's own free-tier quota. Live logs: `npx wrangler tail`, or Workers & Pages → the Worker →
-Observability in the dashboard. To take it down: `npx wrangler delete`.
+
+So there's also a hard daily cap: 300 requests per UTC day (`DAILY_LIMIT` in `wrangler.jsonc`),
+after which the Worker answers 429 until midnight UTC. The count lives in a Durable Object
+(`worker/counter.ts`): a single instance that handles one request at a time, so the count is exact
+(Workers KV, which is eventually consistent, could lose counts). Its storage is a small SQLite
+table, one row per day.
+
+- Try it locally: `npm run dev:worker -- --var DAILY_LIMIT:3`, then send four requests; the fourth
+  gets 429. Requests turned away earlier (wrong origin, too big) aren't counted.
+- See the counts locally: `wrangler dev` keeps the Durable Object's database under
+  `.wrangler/state/v3/do/lodgercomputerperson-intent-DailyCounter/`; open the long-named
+  `.sqlite` file with `sqlite3 <file> 'select * from days'`. Delete that folder to reset.
+
+Live logs: `npx wrangler tail`, or Workers & Pages → the Worker → Observability in the dashboard. To
+take it down: `npx wrangler delete`.
 
 ## What gets sent
 
@@ -100,9 +113,11 @@ minutes (fifteen after a rate limit), then tries again.
 - `src/sim/letters.ts`: `askForLetter` takes the facts (`letterAsk`) when he sits down to write,
   while letters are on; `acceptLetterText` keeps the model's words for the letter he's typing, or
   puts them into one already written, only while it's unread.
-- `worker/index.ts` and `wrangler.jsonc`: the Worker. Holds the key, checks the origin and the rate
-  limit, answers the browser's CORS preflight, `POST /api/intent` and `POST /api/letter`, and turns
+- `worker/index.ts` and `wrangler.jsonc`: the Worker. Holds the key, checks the origin, the rate
+  limit and the daily cap, answers the browser's CORS preflight, `POST /api/intent` and `POST /api/letter`, and turns
   away anything else.
+- `worker/counter.ts`: the daily cap's Durable Object. `worker/cloudflare-workers.d.ts` types the
+  bits of the Workers runtime it uses; `tests/stubs/` stands in for that runtime under Vitest.
 - `.env.local` `VITE_LCP_API_URL`: tells the game where the Worker is, which also shows the setting.
 - `src/llm/model.ts`: the game's side: asks `/api/intent`, with a timeout and a circuit breaker.
 - `src/sim/parser.ts` `validateIntents`: every answer is checked against the fixed lists, twice.
