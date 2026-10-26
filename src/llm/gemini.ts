@@ -45,7 +45,8 @@ export function systemPrompt(dogName: string): string {
     `Rooms: ${ROOMS.join(', ')}. Games: ${GAME_KINDS.map((g) => `${g} (${GAME_NAMES[g]})`).join(', ')}.`,
     `His dog is called ${dogName}.`,
     `At most ${MAX_INTENT_ITEMS} items. Time phrases such as "before bed" are not requests.`,
-    'Politeness: "polite" for please, would you mind and the like; "rude" for insults, orders shouted or curt; otherwise "plain".',
+    'Politeness: "polite" for please, would you mind, cheers and the like. "rude" only for insults, swearing or hostility, such as "do it now, idiot".',
+    'A plain instruction or slang, however short, is "plain": "bust some moves" and "feed the dog" are plain, not rude.',
     'If the message is unclear, could mean more than one thing, or asks for something not on the list, return no items. Never guess.',
   ].join('\n');
 }
