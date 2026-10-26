@@ -240,9 +240,21 @@ function askModelIfThinking(): void {
   const thinking = sim.thinking;
   if (!thinking || thinking.id === askedThinking) return;
   askedThinking = thinking.id;
+  const started = performance.now();
+  talkLog('the parser didn\'t follow it: asking the model…');
   void model()
     .intents(thinking.text, { dogName: sim.dog.identity.name })
-    .then((items) => pending.push({ type: 'understood', id: thinking.id, answer: items && { items } }));
+    .then((items) => {
+      const took = `${((performance.now() - started) / 1000).toFixed(1)}s`;
+      if (items === null) talkLog(`no answer from the model (${took}); not asking again for a while. The Worker's log says why.`);
+      else talkLog(`the model read it as ${items.map((i) => i.intent).join(', ') || 'nothing it knows'} (${took})`);
+      pending.push({ type: 'understood', id: thinking.id, answer: items && { items } });
+    });
+}
+
+/** Which way each typed line went, in the browser console, while the model is on. */
+function talkLog(message: string): void {
+  if (modelOn) console.info(`[talk] ${message}`);
 }
 
 // Letters in his own words: also opt-in. While this is on, the sim asks (letterAsk) when he sits
@@ -518,7 +530,10 @@ talk.addEventListener('submit', (e) => {
   e.preventDefault();
   const text = talkInput.value.trim();
   if (!text) return;
-  send({ type: 'say', text, askModel: modelOn });
+  // While the breaker is open nothing would be sent, so he doesn't pretend to ask.
+  const askModel = modelOn && !remote?.open;
+  talkLog(`"${text}"${modelOn && !askModel ? ' (the model is paused after a failure: parser only)' : ''}`);
+  send({ type: 'say', text, askModel });
   talkInput.value = '';
 });
 
@@ -639,6 +654,19 @@ function logLine(text: string): void {
   while (speechLog.childElementCount > 5) speechLog.firstElementChild!.remove();
 }
 
+/** How far above his feet the bubble's tail points (art pixels): just over his head. */
+const HEAD_HEIGHT = 18;
+
+/** Above his head, kept inside the house, with the tail still pointing at him. */
+function placeBubble(px: number, py: number): void {
+  const half = bubble.offsetWidth / 2;
+  const x = px * scale;
+  const left = Math.min(Math.max(x, half + 4), canvas.clientWidth - half - 4);
+  bubble.style.left = `${left}px`;
+  bubble.style.top = `${(py - HEAD_HEIGHT) * scale}px`;
+  bubble.style.setProperty('--tail', `${x - left + half}px`);
+}
+
 function updateOverlays(px: number, py: number, dx: number, dy: number): void {
   const barking = sim.dog.present && performance.now() < woofUntil;
   dogBubble.hidden = !barking;
@@ -651,14 +679,12 @@ function updateOverlays(px: number, py: number, dx: number, dy: number): void {
   if (speech && speech.seq !== lastSpeechSeq) {
     lastSpeechSeq = speech.seq;
     bubble.textContent = speech.text;
-    logLine(`${sim.person.identity.name}: ${speech.text}`);
+    bubble.classList.toggle('model', !!speech.model);
+    logLine(`${sim.person.identity.name}${speech.model ? ' (AI)' : ''}: ${speech.text}`);
   }
   const talking = speech !== null && sim.tick < speech.untilTick && sim.person.present;
   bubble.hidden = !talking;
-  if (talking) {
-    bubble.style.left = `${px * scale}px`;
-    bubble.style.top = `${(py - 26) * scale}px`;
-  }
+  if (talking) placeBubble(px, py);
 
   const knock = sim.knock;
   if (knock && knock.seq !== lastKnockSeq) {
@@ -952,6 +978,8 @@ function frame(now: number): void {
   const { person: p, dog } = sim;
   const px = lerp(prev.x, p.x);
   const py = lerp(prev.y, p.y);
+  // Where his feet are drawn: up on a seat or down in the bath. The bubble sits above his head.
+  let figureY = py;
 
   ctx.imageSmoothingEnabled = false;
   const hour = (sim.clock.ms % DAY_MS) / HOUR_MS;
@@ -990,6 +1018,7 @@ function frame(now: number): void {
       tick: sim.tick,
     };
     drawTenantSprite(ctx, tenantSheet, p.identity.look, figure);
+    figureY = figure.y;
     if (inside) drawFront(ctx, house, art, inside);
   }
   // He switches the light on in whatever room he's awake in.
@@ -997,7 +1026,7 @@ function frame(now: number): void {
   // Reduced motion: lights switch rather than fade.
   lighting.draw(ctx, hour, awake ? roomAt(house, px, py) : null, reduceMotion ? Infinity : dt);
   soundCaption = sound.update(sim, world, px, py);
-  updateOverlays(px, py, lerp(prev.dx, dog.x), lerp(prev.dy, dog.y));
+  updateOverlays(px, figureY, lerp(prev.dx, dog.x), lerp(prev.dy, dog.y));
   updateControls();
   updateGame();
   updateFarewell();

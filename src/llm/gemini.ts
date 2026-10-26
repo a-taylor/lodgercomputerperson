@@ -94,12 +94,33 @@ interface GeminiCall {
   generationConfig: Record<string, unknown>;
 }
 
+/** How long a request waits for Gemini, which can take 10–20 seconds when it's busy. */
+export const INTENT_TIMEOUT_MS = 20_000;
+/** Time left that's worth a second try after Gemini says it's overloaded (503). */
+const RETRY_MIN_MS = 3000;
+
 /**
  * One call to Gemini: the model's text and why it stopped. Throws GeminiError when the call itself
- * fails (network, timeout, a bad status), so callers can tell that from a poor answer.
+ * fails (network, timeout, a bad status), so callers can tell that from a poor answer. An
+ * overloaded model (503) gets one more try, if there's time left.
  */
-async function callGemini({ system, user, generationConfig }: GeminiCall, opts: GeminiOptions): Promise<{ text: string; finish: string }> {
-  const { apiKey, model = DEFAULT_MODEL, fetch: doFetch = (...a) => fetch(...a), timeoutMs = 8000 } = opts;
+async function callGemini(call: GeminiCall, opts: GeminiOptions): Promise<{ text: string; finish: string }> {
+  const deadline = Date.now() + (opts.timeoutMs ?? INTENT_TIMEOUT_MS);
+  try {
+    return await callGeminiOnce(call, opts, deadline - Date.now());
+  } catch (e) {
+    const left = deadline - Date.now();
+    if (!(e instanceof GeminiError && e.status === 503 && left >= RETRY_MIN_MS)) throw e;
+    return callGeminiOnce(call, opts, left);
+  }
+}
+
+async function callGeminiOnce(
+  { system, user, generationConfig }: GeminiCall,
+  opts: GeminiOptions,
+  timeoutMs: number,
+): Promise<{ text: string; finish: string }> {
+  const { apiKey, model = DEFAULT_MODEL, fetch: doFetch = (...a) => fetch(...a) } = opts;
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
   let res: Response;
   try {
@@ -154,7 +175,7 @@ export async function askGemini(text: string, dogName: string, opts: GeminiOptio
 }
 
 /** Letters take longer to write than a list of intents. */
-export const LETTER_TIMEOUT_MS = 12_000;
+export const LETTER_TIMEOUT_MS = 25_000;
 
 /**
  * A letter in his voice from checked facts, or null when Gemini's answer is unusable (cut off,

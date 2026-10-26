@@ -10,7 +10,7 @@ import { nextFloat, pick } from './rng';
 import { answerInvite, startGame } from './play';
 import { say } from './speech';
 import { currentStep, isAvailable, isAsleep, needPreempts, startActivity, stopActivity, type SimState } from './sim';
-import { HOUR_MS, MINUTE_MS } from './time';
+import { HOUR_MS, MINUTE_MS, TICK_MS } from './time';
 import { DELIVERY, hasRequirement, RUNNING_LOW, type RequirementId, type SupplyId } from './supplies';
 import type { World } from './world';
 
@@ -130,6 +130,9 @@ export function assessRequest(state: SimState, world: World, activityId: string,
   return { chance: Math.min(1, chance), hard: null, soft };
 }
 
+/** How long "let me think" stays up: a little over the browser's wait for the model. */
+const THINKING_TICKS = 25_000 / TICK_MS;
+
 /**
  * Handles something typed. Returns the outcome for requests, null for chat. With `askModel`, a
  * line he can't follow isn't "confused" yet: he thinks, and the game asks a language model what
@@ -158,6 +161,9 @@ export function handleSay(state: SimState, world: World, text: string, askModel 
   if (parsed.intent === null && askModel) {
     state.thinking = { id: state.tick, text };
     say(state, 'thinking');
+    // Up until the answer replaces it: the model can take a while (the Worker gives up at 20s).
+    state.speech!.model = true;
+    state.speech!.untilTick = state.tick + THINKING_TICKS;
     return null;
   }
   return respond(state, world, parsed);
@@ -172,6 +178,14 @@ export function handleUnderstood(state: SimState, world: World, id: number, answ
   delete state.thinking;
   // Dozed off while thinking: the moment has passed.
   if (isAsleep(state, world)) return;
+  // Whatever he says in answer is marked as the model's doing.
+  const seq = state.speech?.seq;
+  answerUnderstood(state, world, answer);
+  if (state.speech && state.speech.seq !== seq) state.speech.model = true;
+}
+
+/** Acts on the model's answer: one request, several, or none (confused). */
+function answerUnderstood(state: SimState, world: World, answer: unknown): void {
   const items = (validateIntents(answer) ?? []).map(parsedFromItem);
   const asks = items.flatMap((parsed) => {
     const ask = askOf(world, parsed);

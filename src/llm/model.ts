@@ -44,8 +44,8 @@ export interface RemoteOptions {
   /** The Worker's base URL, e.g. https://lcp-api.example.workers.dev */
   url: string;
   fetch?: typeof fetch;
+  /** A little over the Worker's own limits for Gemini (20 and 25 seconds), so it answers first. */
   timeoutMs?: number;
-  /** Letters take longer; a little over the Worker's own limit for Gemini. */
   letterTimeoutMs?: number;
 }
 
@@ -57,8 +57,8 @@ export interface RemoteOptions {
 export function remoteModel({
   url,
   fetch: doFetch = (...a) => fetch(...a),
-  timeoutMs = 8000,
-  letterTimeoutMs = 15_000,
+  timeoutMs = 22_000,
+  letterTimeoutMs = 28_000,
 }: RemoteOptions): RemoteModel {
   const base = url.replace(/\/+$/, '');
   async function post(path: string, body: unknown, timeout: number): Promise<unknown> {

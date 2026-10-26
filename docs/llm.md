@@ -98,8 +98,14 @@ current [Gemini API terms](https://ai.google.dev/gemini-api/terms) for your situ
 He says "Hmm?" as if there were no model. The Worker's log (its terminal, or `wrangler tail`)
 shows `[intent]` with Google's reason (for example "API key not valid"). If the Worker isn't
 running, or the page isn't on localhost (403), the browser console shows a failed request or a
-CORS error instead. Gemini occasionally takes longer than the timeout (8 seconds for a request, 12 for a
-letter), which also counts as a failure. A failed letter is just his template letter.
+CORS error instead. When Google is busy, Gemini can take 10–20 seconds, or answer 503 ("high
+demand"; the Worker tries once more). Past the timeout (20 seconds for a request, 25 for a letter)
+it counts as a failure. A failed letter is just his template letter.
+
+To see which way a typed line went, open the browser console: with the model on, each line logs
+`[talk]`, then whether the parser handled it or the model was asked, and what it answered. His
+bubble is blue with an **AI** tag while he's asking the model and when he answers from what it
+read; white bubbles are the game's own parser.
 
 Separately, Settings → **Tell me when he writes a letter** shows a browser notification while the
 game is open in a window you're not looking at. It doesn't need a model, so it works on Pages too. After a failure the game stops asking for two

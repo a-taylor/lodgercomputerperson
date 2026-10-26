@@ -166,6 +166,19 @@ describe('thinking about a line he did not follow', () => {
     }
   });
 
+  it('marks what he says while asking the model, and in answer, but not what he says himself', () => {
+    const sim = tenant();
+    step(sim, world, [{ type: 'say', text: 'hello' }]);
+    expect(sim.speech?.model).toBeUndefined();
+    step(sim, world, [{ type: 'say', text: UNMATCHED, askModel: true }]);
+    expect(sim.speech?.model).toBe(true);
+    step(sim, world, [{ type: 'say', text: 'hello', askModel: true }]);
+    expect(sim.speech?.model).toBeUndefined();
+    step(sim, world, [{ type: 'say', text: UNMATCHED, askModel: true }]);
+    step(sim, world, [{ type: 'understood', id: sim.thinking!.id, answer: { items: [{ intent: 'greet', politeness: 0 }] } }]);
+    expect(sim.speech).toMatchObject({ key: 'greet', model: true });
+  });
+
   it('ignores an answer to an older line', () => {
     const sim = tenant();
     step(sim, world, [{ type: 'say', text: UNMATCHED, askModel: true }]);

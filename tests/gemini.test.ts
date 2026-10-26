@@ -53,6 +53,20 @@ describe('asking Gemini', () => {
     expect(await askGemini('x', 'Biscuit', opts(fakeGemini('not json').fn))).toEqual([]);
     expect(await askGemini('x', 'Biscuit', opts(fakeGemini({ reply: 'hi' }).fn))).toEqual([]);
   });
+
+  it('tries once more when Gemini is overloaded, but not after other failures', async () => {
+    const answers = [fakeGemini(null, 503).fn, fakeGemini({ items: [{ intent: 'piano', politeness: 'plain' }] }).fn];
+    let calls = 0;
+    const flaky = ((...a: Parameters<typeof fetch>) => answers[calls++]!(...a)) as typeof fetch;
+    expect(await askGemini('x', 'Biscuit', opts(flaky))).toEqual([{ intent: 'piano', politeness: 0 }]);
+    expect(calls).toBe(2);
+
+    for (const status of [503, 400]) {
+      const { fn, calls: made } = fakeGemini(null, status);
+      await expect(askGemini('x', 'Biscuit', opts(fn))).rejects.toMatchObject({ status });
+      expect(made).toHaveLength(status === 503 ? 2 : 1);
+    }
+  });
 });
 
 describe('the dev server endpoint', () => {

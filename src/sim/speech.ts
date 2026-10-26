@@ -16,6 +16,8 @@ export interface SpeechState {
   seq: number;
   /** Real-time tick the bubble disappears. */
   untilTick: number;
+  /** Said while asking a language model, or in answer to what it read: the bubble shows it. */
+  model?: boolean;
 }
 
 export interface SpeechLogEntry {
