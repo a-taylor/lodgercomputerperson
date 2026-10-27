@@ -136,7 +136,7 @@
     {
       "id": "den.tv",
       "room": "den",
-      "x": 28
+      "x": 42
     },
     {
       "id": "den.records",
@@ -530,8 +530,20 @@
       "name": "Piano",
       "room": "den",
       "x": 112,
-      "art": "drawn:piano",
-      "use": "den.piano"
+      "art": "drawn:piano"
+    },
+    {
+      "id": "chair-piano",
+      "name": "Chair",
+      "room": "den",
+      "x": 119,
+      "art": "drawn:chairBack",
+      "use": "den.piano",
+      "seat": {
+        "height": 5,
+        "facing": 1,
+        "fromBehind": true
+      }
     },
     {
       "id": "lamp-study",

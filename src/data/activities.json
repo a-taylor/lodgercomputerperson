@@ -576,6 +576,14 @@
         {
           "node": "study.games",
           "minutes": [
+            1,
+            1
+          ],
+          "label": "getting a game out"
+        },
+        {
+          "node": "kitchen.table",
+          "minutes": [
             600,
             600
           ],
