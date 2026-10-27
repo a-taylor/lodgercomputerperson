@@ -398,7 +398,8 @@ inviteBar.addEventListener('click', (e) => {
 
 let shownGame: object | null = null;
 let shownVersion = -1;
-let closedGame: object | null = null;
+// Closing only hides the panel; a game that was already over when the page loaded counts as closed.
+let closedGame: object | null = sim.game?.over ? sim.game : null;
 
 function updateGame(): void {
   const g = sim.game;
