@@ -1,4 +1,4 @@
-import { drawFront, drawHouse, furnitureBounds, loadArt } from './render/canvas';
+import { drawFront, drawHouse, drawOver, furnitureBounds, loadArt } from './render/canvas';
 import { drawDogSprite, loadDogSheets } from './render/dogArt';
 import { SoundDirector, type SoundSettings } from './audio/director';
 import { createLighting, roomAt } from './render/lighting';
@@ -1011,6 +1011,7 @@ function frame(now: number): void {
       pose,
       lie: using?.lie,
       bare: inside !== null,
+      fromBehind: seat?.fromBehind,
       asleep: isAsleep(sim, world),
       carrying: p.carrying,
       humming: p.identity.quirks.includes('hummer'),
@@ -1020,6 +1021,7 @@ function frame(now: number): void {
     drawTenantSprite(ctx, tenantSheet, p.identity.look, figure);
     figureY = figure.y;
     if (inside) drawFront(ctx, house, art, inside);
+    if (seat?.fromBehind) drawOver(ctx, house, art, using!, sim.tick);
   }
   // He switches the light on in whatever room he's awake in.
   const awake = p.present && p.alive && !isAsleep(sim, world);

@@ -201,6 +201,13 @@ const typewriterDesk = sprite(24, 18, (p) => {
   p.rect(20, 11, 3, 7, P.outline).vline(21, 11, 6, P.wood);
 });
 
+/** A desk chair seen from behind: the back, the seat's edge and two legs. Drawn over him. */
+const chairBack = sprite(10, 10, (p) => {
+  p.box(1, 0, 8, 5, P.woodMid, P.woodLight, P.woodDark);
+  p.rect(0, 5, 10, 2, P.outline).hline(1, 5, 8, P.wood);
+  p.rect(1, 7, 2, 3, P.outline).rect(7, 7, 2, 3, P.outline);
+});
+
 /** Desk with a beige computer: monitor with a blue screen, keyboard. */
 const computerDesk = sprite(24, 21, (p) => {
   p.box(6, 0, 12, 10, P.cream, P.creamLight, P.peach);
@@ -264,6 +271,7 @@ export const DRAWN = {
   dogBowl,
   recordPlayer,
   typewriterDesk,
+  chairBack,
   computerDesk,
   clock,
   gamesCabinet,

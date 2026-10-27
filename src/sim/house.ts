@@ -53,9 +53,10 @@ export interface FurnitureDef {
   sitIn?: { seatHeight: number; frontFromRow: number };
   /**
    * For chairs he sits on: the seat's height off the floor, which way he faces (towards the open
-   * side, away from the back), and a sideways nudge so he's against the back.
+   * side, away from the back), and a sideways nudge so he's against the back. `fromBehind`: he
+   * sits with his back to us, and the chair is drawn again over him.
    */
-  seat?: { height: number; facing: 1 | -1; dx?: number };
+  seat?: { height: number; facing: 1 | -1; dx?: number; fromBehind?: boolean };
   /**
    * Lamps and fires: where the light comes from (offset from the art's top-left), how far it
    * reaches, and whether it's always on (a fire) or only while he's in the room.

@@ -17,7 +17,9 @@ The licence asks for any edits to be listed in full.
 - Free Protagonist: the PNG file is unchanged, but on screen each frame is changed as it's drawn:
   - coloured by region (the sheet is plain white): his head in his skin tone (softened slightly), the three rows below his chin in his shirt colour, the rest in his trouser colour; lying down, the same split runs sideways;
   - his face tinted green while he's sick, and his shirt shown as skin in the bath;
-  - mirrored horizontally when he faces left (and when he lies with his head to the left).
+  - mirrored horizontally when he faces left (and when he lies with his head to the left);
+  - asleep in bed, two short dashes drawn on the lying frame as closed eyes;
+  - sitting at the typewriter with his back to us, the sitting frame's eyes painted over in his skin tone and the feet that stick out to the side left off.
   The last frame of the "die" animation is used as his sleeping pose in bed.
 
 ## The dog

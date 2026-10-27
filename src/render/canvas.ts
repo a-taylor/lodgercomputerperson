@@ -124,6 +124,12 @@ function drawFurniture(ctx: CanvasRenderingContext2D, art: Art, f: FurnitureDef,
   }
 }
 
+/** Redraws a chair he's sitting on with his back to us, so its back hides his. */
+export function drawOver(ctx: CanvasRenderingContext2D, house: House, art: Art, f: FurnitureDef, tick: number): void {
+  const floor = house.def.floors.find((fl) => fl.id === house.def.rooms.find((r) => r.id === f.room)!.floor)!;
+  drawFurniture(ctx, art, f, floor.floorY, floor.ceilingY, tick);
+}
+
 /** Redraws the front of something he's sitting in (rows from sitIn.frontFromRow down), over him. */
 export function drawFront(ctx: CanvasRenderingContext2D, house: House, art: Art, f: FurnitureDef): void {
   if (!f.sitIn || !f.art.startsWith('pack:')) return;

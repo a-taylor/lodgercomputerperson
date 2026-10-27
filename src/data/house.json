@@ -116,7 +116,7 @@
     {
       "id": "kitchen.table",
       "room": "kitchen",
-      "x": 200
+      "x": 212
     },
     {
       "id": "kitchen.stove",
@@ -417,8 +417,7 @@
       "name": "Table",
       "room": "kitchen",
       "x": 192,
-      "art": "pack:Furniture/Table_Single",
-      "use": "kitchen.table"
+      "art": "pack:Furniture/Table_Single"
     },
     {
       "id": "teapot",
@@ -433,7 +432,12 @@
       "name": "Chair",
       "room": "kitchen",
       "x": 208,
-      "art": "pack:Furniture/Chair"
+      "art": "pack:Furniture/Chair",
+      "use": "kitchen.table",
+      "seat": {
+        "height": 5,
+        "facing": -1
+      }
     },
     {
       "id": "counter-left",
@@ -546,8 +550,20 @@
       "name": "Typewriter desk",
       "room": "study",
       "x": 152,
-      "art": "drawn:typewriterDesk",
-      "use": "study.typewriter"
+      "art": "drawn:typewriterDesk"
+    },
+    {
+      "id": "chair-study",
+      "name": "Chair",
+      "room": "study",
+      "x": 159,
+      "art": "drawn:chairBack",
+      "use": "study.typewriter",
+      "seat": {
+        "height": 5,
+        "facing": 1,
+        "fromBehind": true
+      }
     },
     {
       "id": "bookshelf-study",

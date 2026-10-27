@@ -24,12 +24,27 @@ export function createDog(identity: DogIdentity, world: World, node: string, pre
   return dog;
 }
 
+/** How far to his side the dog settles, so it isn't lying across his chair (art pixels). */
+const BESIDE = 14;
+
+/** Arrived where he is: settle a little to one side, the side with room, facing him. */
+function besideHim(state: SimState, world: World): void {
+  const dog = state.dog;
+  const p = state.person;
+  if (!p.present || p.path.length > 0 || dog.at !== p.at) return;
+  const room = world.house.def.rooms.find((r) => r.id === world.house.nodes.get(dog.at)!.room)!;
+  const right = p.x + BESIDE;
+  dog.x = right <= room.x1 - BESIDE / 2 ? right : p.x - BESIDE;
+  dog.facing = dog.x > p.x ? -1 : 1;
+}
+
 export function stepDog(state: SimState, world: World): void {
   const dog = state.dog;
   if (!dog.present) return;
   if (dog.path.length > 0) {
     dog.stillTicks = 0;
     walk(dog, world.house, PACE[dog.identity.size]);
+    if (dog.path.length === 0) besideHim(state, world);
     return;
   }
   dog.stillTicks++;

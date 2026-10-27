@@ -21,6 +21,8 @@ export interface TenantPose {
   sick: boolean;
   /** In the bath: no shirt. */
   bare?: boolean;
+  /** Sitting with his back to us: the same frame with the eyes painted out (he has no hair). */
+  fromBehind?: boolean;
   /** When lying down: how high off the floor, which end his head is, and a nudge sideways. */
   lie?: LieSpot;
   tick: number;
@@ -105,6 +107,17 @@ function regionsFor(pixels: Uint8ClampedArray, sheetW: number, frame: number): U
   }
   return out;
 }
+
+/** The eyes on the sitting frame, two pixels each. */
+const SITTING_EYES: [number, number][] = [
+  [10, 14],
+  [10, 15],
+  [14, 14],
+  [14, 15],
+];
+
+/** Where his feet stick out past his body on the sitting frame: this column and right, from this row. */
+const SITTING_FEET = { left: 16, top: 20 };
 
 /** Closed eyes on the lying frame (head to the right): two short dashes. */
 const SLEEPING_EYES: [number, number][] = [
@@ -192,6 +205,15 @@ export function drawTenantSprite(ctx: CanvasRenderingContext2D, sheet: TenantShe
       const o = (ey * SIZE + ex) * 4;
       img.data.set([52, 1, 41, 255], o);
     }
+  }
+  // From behind: each eye takes the colour of the face just left of it, and the feet that stick
+  // out to the side go, since his legs are under the desk.
+  if (pose.fromBehind && pose.pose === 'sit' && !pose.walking) {
+    for (const [ex, ey] of SITTING_EYES) {
+      const o = (ey * SIZE + ex) * 4;
+      img.data.copyWithin(o, o - 4, o);
+    }
+    for (let y = SITTING_FEET.top; y < SIZE; y++) img.data.fill(0, (y * SIZE + SITTING_FEET.left) * 4, (y + 1) * SIZE * 4);
   }
   s.putImageData(img, 0, 0);
 
